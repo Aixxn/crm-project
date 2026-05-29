@@ -1,0 +1,47 @@
+# OS / editor
+.DS_Store
+.fleet/
+.idea/
+.nova/
+.vscode/
+.zed/
+
+# Environment / local secrets
+.env
+.env.*
+!.env.example
+auth.json
+
+# Logs / caches
+*.log
+dev.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.phpunit.cache/
+.phpunit.result.cache
+.phpactor.json
+
+# PHP / Laravel dependencies and runtime
+vendor/
+laravel/vendor/
+laravel/storage/*.key
+laravel/storage/pail/
+laravel/public/storage/
+
+# Node dependencies and frontend build output
+node_modules/
+laravel/node_modules/
+laravel/public/build/
+laravel/public/hot
+laravel/bootstrap/ssr/
+laravel/public/fonts-manifest.dev.json
+
+# Generated Wayfinder files
+laravel/resources/js/actions/
+laravel/resources/js/routes/
+laravel/resources/js/wayfinder/
+
+# Local MCP / agent state
+laravel/.agents/
+laravel/.claude/
