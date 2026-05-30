@@ -11,7 +11,7 @@
 .env.*
 !.env.example
 auth.json
-
+.superpowers/
 # Logs / caches
 *.log
 dev.log
