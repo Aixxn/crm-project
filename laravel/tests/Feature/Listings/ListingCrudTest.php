@@ -5,11 +5,17 @@ namespace Tests\Feature\Listings;
 use App\Enums\ContactRole;
 use App\Enums\ListingStatus;
 use App\Models\Contact;
+use App\Models\Inquiry;
 use App\Models\Listing;
+use App\Models\Note;
+use App\Models\Offer;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Task;
 use App\Models\User;
+use App\Models\Viewing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ListingCrudTest extends TestCase
@@ -123,6 +129,68 @@ class ListingCrudTest extends TestCase
                 'address',
                 'price',
             ]);
+    }
+
+    public function test_create_page_includes_agent_and_owner_options(): void
+    {
+        $admin = $this->userWithRoleAndPermissions('admin');
+        $agent = User::factory()->create(['name' => 'Agent A']);
+        $owner = Contact::factory()->create(['role' => ContactRole::Owner]);
+
+        $this->actingAs($admin)
+            ->get(route('listings.create'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('listings/create')
+                ->where('agents.0.id', $agent->id)
+                ->where('owners.0.id', $owner->id)
+            );
+    }
+
+    public function test_agent_create_page_scopes_agent_options_to_self(): void
+    {
+        $agent = $this->userWithRoleAndPermissions('agent', ['listing.create']);
+        User::factory()->create(['name' => 'Other Agent']);
+
+        $this->actingAs($agent)
+            ->get(route('listings.create'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('listings/create')
+                ->has('agents', 1)
+                ->where('agents.0.id', $agent->id)
+            );
+    }
+
+    public function test_show_payload_includes_listing_workspace_relationships(): void
+    {
+        $admin = $this->userWithRoleAndPermissions('admin');
+        $listing = Listing::factory()->create();
+
+        Inquiry::factory()->create(['listing_id' => $listing->id]);
+        Viewing::factory()->create(['listing_id' => $listing->id]);
+        Offer::factory()->create(['listing_id' => $listing->id]);
+        Task::factory()->create([
+            'related_entity_type' => $listing->getMorphClass(),
+            'related_entity_id' => $listing->id,
+        ]);
+        Note::factory()->create([
+            'related_entity_type' => $listing->getMorphClass(),
+            'related_entity_id' => $listing->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('listings.show', $listing))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('listings/show')
+                ->where('listing.id', $listing->id)
+                ->has('listing.inquiries', 1)
+                ->has('listing.viewings', 1)
+                ->has('listing.offers', 1)
+                ->has('listing.tasks', 1)
+                ->has('listing.notes', 1)
+            );
     }
 
     /**
