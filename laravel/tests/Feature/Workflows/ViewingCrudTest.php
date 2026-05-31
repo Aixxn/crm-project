@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Viewing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ViewingCrudTest extends TestCase
@@ -66,6 +67,58 @@ class ViewingCrudTest extends TestCase
             ->assertJsonValidationErrors('agent_id');
     }
 
+    public function test_viewing_pages_render_expected_inertia_components(): void
+    {
+        $admin = $this->adminUser();
+        $agent = User::factory()->create();
+        $listing = Listing::factory()->create();
+        $contact = Contact::factory()->create();
+        $viewing = Viewing::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $contact->id,
+            'agent_id' => $agent->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('viewings.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('viewings/index')
+                ->has('viewings.data')
+                ->has('filters')
+                ->has('listings', 1)
+            );
+
+        $this->actingAs($admin)
+            ->get(route('viewings.create'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('viewings/create')
+                ->has('listings', 1)
+                ->has('contacts')
+                ->has('agents')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('viewings.edit', $viewing))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('viewings/edit')
+                ->where('viewing.id', $viewing->id)
+                ->has('listings', 1)
+                ->has('contacts')
+                ->has('agents')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('viewings.show', $viewing))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('viewings/show')
+                ->where('viewing.id', $viewing->id)
+            );
+    }
+
     private function payload(Listing $listing, Contact $contact, User $agent, array $overrides = []): array
     {
         return array_merge([
@@ -87,6 +140,14 @@ class ViewingCrudTest extends TestCase
         }
 
         $user->assignRole($role);
+
+        return $user;
+    }
+
+    private function adminUser(): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole(Role::factory()->create(['key' => 'admin']));
 
         return $user;
     }

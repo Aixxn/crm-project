@@ -6,10 +6,13 @@ use App\Enums\ContactRole;
 use App\Models\Contact;
 use App\Models\Inquiry;
 use App\Models\Listing;
+use App\Models\Offer;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Viewing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ContactCrudTest extends TestCase
@@ -121,6 +124,68 @@ class ContactCrudTest extends TestCase
                 'role',
                 'first_name',
             ]);
+    }
+
+    public function test_contact_pages_render_expected_inertia_components(): void
+    {
+        $admin = $this->userWithRoleAndPermissions('admin');
+        $contact = Contact::factory()->create();
+
+        $this->actingAs($admin)
+            ->get(route('contacts.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('contacts/index')
+                ->has('contacts.data')
+                ->has('filters')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('contacts.create'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('contacts/create')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('contacts.edit', $contact))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('contacts/edit')
+                ->where('contact.id', $contact->id)
+            );
+    }
+
+    public function test_contact_show_payload_includes_related_activity(): void
+    {
+        $admin = $this->userWithRoleAndPermissions('admin');
+        $contact = Contact::factory()->create();
+        $listing = Listing::factory()->create(['owner_contact_id' => $contact->id]);
+
+        Inquiry::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $contact->id,
+        ]);
+        Viewing::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $contact->id,
+        ]);
+        Offer::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $contact->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('contacts.show', $contact))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('contacts/show')
+                ->where('contact.id', $contact->id)
+                ->has('contact.owned_listings', 1)
+                ->has('contact.inquiries', 1)
+                ->has('contact.viewings', 1)
+                ->has('contact.offers', 1)
+            );
     }
 
     /**

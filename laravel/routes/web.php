@@ -3,7 +3,9 @@
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ViewingController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +18,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('inquiries', InquiryController::class);
     Route::resource('viewings', ViewingController::class);
     Route::resource('offers', OfferController::class);
+    Route::resource('tasks', TaskController::class);
+    Route::resource('notes', NoteController::class);
 });
 
 require __DIR__.'/settings.php';

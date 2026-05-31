@@ -10,6 +10,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class InquiryCrudTest extends TestCase
@@ -76,6 +77,54 @@ class InquiryCrudTest extends TestCase
             ->assertJsonValidationErrors('listing_id');
     }
 
+    public function test_inquiry_pages_render_expected_inertia_components(): void
+    {
+        $admin = $this->adminUser();
+        $listing = Listing::factory()->create();
+        $contact = Contact::factory()->create();
+        $inquiry = Inquiry::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $contact->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('inquiries.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('inquiries/index')
+                ->has('inquiries.data')
+                ->has('filters')
+                ->has('listings', 1)
+            );
+
+        $this->actingAs($admin)
+            ->get(route('inquiries.create'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('inquiries/create')
+                ->has('listings', 1)
+                ->has('contacts')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('inquiries.edit', $inquiry))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('inquiries/edit')
+                ->where('inquiry.id', $inquiry->id)
+                ->has('listings', 1)
+                ->has('contacts')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('inquiries.show', $inquiry))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('inquiries/show')
+                ->where('inquiry.id', $inquiry->id)
+            );
+    }
+
     private function payload(Listing $listing, Contact $contact, array $overrides = []): array
     {
         return array_merge([
@@ -98,6 +147,14 @@ class InquiryCrudTest extends TestCase
         }
 
         $user->assignRole($role);
+
+        return $user;
+    }
+
+    private function adminUser(): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole(Role::factory()->create(['key' => 'admin']));
 
         return $user;
     }

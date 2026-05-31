@@ -1,5 +1,14 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, FolderGit2, LayoutGrid } from 'lucide-react';
+import {
+    Building2,
+    CalendarClock,
+    CircleDollarSign,
+    ContactRound,
+    LayoutDashboard,
+    ListChecks,
+    MessageSquareText,
+    Settings,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,32 +23,57 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import contacts from '@/routes/contacts';
+import inquiries from '@/routes/inquiries';
 import listings from '@/routes/listings';
+import offers from '@/routes/offers';
+import profile from '@/routes/profile';
+import viewings from '@/routes/viewings';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
-        icon: LayoutGrid,
+        icon: LayoutDashboard,
     },
     {
         title: 'Listings',
         href: listings.index(),
         icon: Building2,
     },
+    {
+        title: 'Contacts',
+        href: contacts.index(),
+        icon: ContactRound,
+    },
+    {
+        title: 'Inquiries',
+        href: inquiries.index(),
+        icon: MessageSquareText,
+    },
+    {
+        title: 'Viewings',
+        href: viewings.index(),
+        icon: CalendarClock,
+    },
+    {
+        title: 'Offers',
+        href: offers.index(),
+        icon: CircleDollarSign,
+    },
+    {
+        title: 'Tasks / Notes',
+        href: '/tasks',
+        icon: ListChecks,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Settings',
+        href: profile.edit(),
+        icon: Settings,
     },
 ];
 
