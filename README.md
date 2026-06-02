@@ -105,13 +105,6 @@ The Vite server runs separately and is used by Laravel automatically during deve
 
 ## Default Login
 
-After running the seeder, use this CRM admin account:
-
-```text
-Email: test@example.com
-Password: password
-```
-
 Admin and Agent users can access the CRM dashboard and side panel. Regular registered portal users should remain on buyer/lister portal pages and should not be allowed into the CRM admin area.
 
 ## Useful Local Commands
