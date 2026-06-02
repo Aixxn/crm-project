@@ -17,6 +17,13 @@ export type ContactSummary = {
 
 export type AgentSummary = Pick<User, 'id' | 'name' | 'email'>;
 
+export type ListingMediaSummary = {
+    id: string;
+    url: string;
+    type: string;
+    sort_order?: number | null;
+};
+
 export type ListingSummary = {
     id: string;
     assigned_agent_id: number;
@@ -32,6 +39,7 @@ export type ListingSummary = {
     updated_at: string;
     assigned_agent?: AgentSummary | null;
     owner?: ContactSummary | null;
+    media?: ListingMediaSummary[];
 };
 
 export type ListingFormData = {
@@ -44,6 +52,7 @@ export type ListingFormData = {
     bedrooms: string;
     bathrooms: string;
     area_sqft: string;
+    images: File[];
 };
 
 export type InquirySummary = {

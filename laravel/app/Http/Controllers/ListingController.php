@@ -6,12 +6,14 @@ use App\Http\Requests\Listings\StoreListingRequest;
 use App\Http\Requests\Listings\UpdateListingRequest;
 use App\Models\Contact;
 use App\Models\Listing;
+use App\Models\ListingMedia;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,7 +24,11 @@ class ListingController extends Controller
         Gate::authorize('viewAny', Listing::class);
 
         $listings = Listing::query()
-            ->with(['assignedAgent:id,name,email', 'owner:id,first_name,last_name,email,phone'])
+            ->with([
+                'assignedAgent:id,name,email',
+                'owner:id,first_name,last_name,email,phone',
+                'media' => fn ($query) => $query->orderBy('sort_order'),
+            ])
             ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
@@ -59,10 +65,25 @@ class ListingController extends Controller
 
     public function store(StoreListingRequest $request): JsonResponse|RedirectResponse
     {
-        $listing = Listing::query()->create($request->validated());
+        $validated = $request->validated();
+        $images = $validated['images'] ?? [];
+        unset($validated['images']);
+
+        $listing = Listing::query()->create($validated);
+
+        foreach ($images as $index => $image) {
+            $path = $image->store("listings/{$listing->getKey()}", 'public');
+
+            ListingMedia::query()->create([
+                'listing_id' => $listing->getKey(),
+                'url' => Storage::disk('public')->url($path),
+                'type' => 'photo',
+                'sort_order' => $index,
+            ]);
+        }
 
         if ($request->expectsJson()) {
-            return response()->json(['listing' => $listing], 201);
+            return response()->json(['listing' => $listing->load('media')], 201);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Listing created.')]);

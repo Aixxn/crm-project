@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,19 +39,20 @@ class PublicPortalAccessTest extends TestCase
     public function test_public_portal_user_can_open_buyer_lister_pages(): void
     {
         $user = User::factory()->create();
+        $listing = Listing::factory()->active()->create();
 
         $publicRoutes = [
-            'home',
-            'public.browse',
-            'public.property.show',
-            'public.my-home',
-            'public.deal-tracker',
-            'public.settings',
+            route('home'),
+            route('public.browse'),
+            route('public.property.show', $listing),
+            route('public.my-home'),
+            route('public.deal-tracker'),
+            route('public.settings'),
         ];
 
-        foreach ($publicRoutes as $routeName) {
+        foreach ($publicRoutes as $url) {
             $this->actingAs($user)
-                ->get(route($routeName))
+                ->get($url)
                 ->assertOk();
         }
     }

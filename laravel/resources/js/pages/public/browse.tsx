@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     BedDouble,
     Building2,
@@ -14,34 +14,40 @@ import {
     Warehouse,
     Ruler,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { FormEvent, MouseEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from './_components/public-header';
 
-const properties = [
-    {
-        image: 'https://images.unsplash.com/photo-1600607687644-c7171b42498b?auto=format&fit=crop&w=900&q=85',
-        price: '₱ 2,450,000',
-        address: '1428 Elm Street, Westside District, CA 90210',
-        meta: ['4 Beds', '3.5 Baths', '3,200 SqFt'],
-        status: 'Active',
-        flag: 'New Listing',
-    },
-    {
-        image: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=85',
-        price: '₱ 1,895,000',
-        address: '880 Skyline Blvd, Hilltop Heights, CA 90212',
-        meta: ['3 Beds', '2 Baths', '2,450 SqFt'],
-        status: 'Active',
-    },
-    {
-        image: 'https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?auto=format&fit=crop&w=900&q=85',
-        price: '₱ 3,100,000',
-        address: '400 Penthouse Way, Downtown Core, CA 90001',
-        meta: ['2 Beds', '2.5 Baths', '1,800 SqFt'],
-        status: 'Under Offer',
-    },
-];
+type PublicListingCard = {
+    id: string;
+    href: string;
+    image?: string | null;
+    formattedPrice: string;
+    address: string;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    areaSqft?: number | null;
+    status: string;
+};
+
+type BrowseProps = {
+    listings?: PublicListingCard[];
+    resultCount?: number;
+    savedListingIds?: string[];
+    filters?: {
+        search?: string;
+        property_type?: string;
+        status?: string;
+        min_price?: string;
+        max_price?: string;
+        bedrooms?: string;
+        bathrooms?: string;
+    };
+    filterOptions?: {
+        propertyTypes: string[];
+        statuses: string[];
+    };
+};
 
 const chips = [
     { label: 'Top Estate', icon: House },
@@ -50,7 +56,34 @@ const chips = [
     { label: 'Transit Hubs', icon: Landmark },
 ];
 
-export default function Browse() {
+export default function Browse({
+    listings = [],
+    resultCount,
+    savedListingIds = [],
+    filters = {},
+    filterOptions = { propertyTypes: [], statuses: [] },
+}: BrowseProps) {
+    const { auth } = usePage().props;
+    const count = resultCount ?? listings.length;
+    const searchForm = useForm({
+        search: filters.search ?? '',
+        property_type: filters.property_type ?? '',
+        status: filters.status ?? '',
+        min_price: filters.min_price ?? '',
+        max_price: filters.max_price ?? '',
+        bedrooms: filters.bedrooms ?? '',
+        bathrooms: filters.bathrooms ?? '',
+    });
+
+    const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        router.get('/browse', searchForm.data, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     return (
         <>
             <Head title="Browse Properties" />
@@ -61,10 +94,20 @@ export default function Browse() {
                         Discover properties
                     </h1>
 
-                    <div className="mt-8 grid max-w-[56rem] gap-3 rounded-md border border-[#C9CEDF] bg-white p-3 md:grid-cols-[1fr_auto]">
+                    <form
+                        className="mt-8 grid max-w-[56rem] gap-3 rounded-md border border-[#C9CEDF] bg-white p-3 md:grid-cols-[1fr_auto]"
+                        onSubmit={submitSearch}
+                    >
                         <label className="flex h-12 items-center gap-4 px-2 text-[#6E7284]">
                             <Search className="size-5" />
                             <input
+                                value={searchForm.data.search}
+                                onChange={(event) =>
+                                    searchForm.setData(
+                                        'search',
+                                        event.target.value,
+                                    )
+                                }
                                 className="h-full w-full bg-transparent text-base outline-none placeholder:text-[#808497]"
                                 placeholder="Search by neighborhood, ZIP, or address..."
                             />
@@ -73,6 +116,52 @@ export default function Browse() {
                             <SlidersHorizontal />
                             Filters
                         </Button>
+                    </form>
+
+                    <div className="mt-3 grid max-w-[56rem] gap-3 md:grid-cols-3">
+                        <select
+                            value={searchForm.data.property_type}
+                            onChange={(event) =>
+                                searchForm.setData(
+                                    'property_type',
+                                    event.target.value,
+                                )
+                            }
+                            className="h-11 rounded-sm border border-[#C9CEDF] bg-white px-3 text-sm"
+                        >
+                            <option value="">All property types</option>
+                            {filterOptions.propertyTypes.map((type) => (
+                                <option key={type} value={type}>
+                                    {type}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            value={searchForm.data.status}
+                            onChange={(event) =>
+                                searchForm.setData('status', event.target.value)
+                            }
+                            className="h-11 rounded-sm border border-[#C9CEDF] bg-white px-3 text-sm"
+                        >
+                            <option value="">Any status</option>
+                            {filterOptions.statuses.map((status) => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
+                        </select>
+                        <input
+                            type="number"
+                            value={searchForm.data.bedrooms}
+                            onChange={(event) =>
+                                searchForm.setData(
+                                    'bedrooms',
+                                    event.target.value,
+                                )
+                            }
+                            className="h-11 rounded-sm border border-[#C9CEDF] bg-white px-3 text-sm"
+                            placeholder="Minimum bedrooms"
+                        />
                     </div>
 
                     <div className="mt-6 flex flex-wrap gap-3">
@@ -89,7 +178,8 @@ export default function Browse() {
 
                     <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-b border-[#D8DCE8] pb-4">
                         <p className="text-base text-[#525769]">
-                            Showing 124 results in your area
+                            Showing {count} result{count === 1 ? '' : 's'} in
+                            your area
                         </p>
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="text-sm text-[#6E7284]">
@@ -111,17 +201,25 @@ export default function Browse() {
                         </div>
                     </div>
 
-                    <div className="mt-8 grid gap-6 md:grid-cols-3">
-                        {properties.map((property) => (
-                            <PropertyCard key={property.address} {...property} />
-                        ))}
-                    </div>
-
-                    <div className="mt-12 flex justify-center">
-                        <Button variant="outline" className="h-12 px-10">
-                            Load More Properties
-                        </Button>
-                    </div>
+                    {listings.length > 0 ? (
+                        <div className="mt-8 grid gap-6 md:grid-cols-3">
+                            {listings.map((property) => (
+                                <PropertyCard
+                                    key={property.id}
+                                    property={property}
+                                    canSave={Boolean(auth.user)}
+                                    isSaved={savedListingIds.includes(
+                                        property.id,
+                                    )}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            title="No matching listings"
+                            body="Try adjusting your search or filters."
+                        />
+                    )}
                 </section>
 
                 <footer className="border-t border-[#D8DCE8] bg-white">
@@ -140,8 +238,14 @@ export default function Browse() {
                                 market data.
                             </p>
                         </div>
-                        <FooterGroup title="Platform" links={['Our Agents', 'Careers']} />
-                        <FooterGroup title="Support" links={['Contact Us', 'Terms', 'Privacy']} />
+                        <FooterGroup
+                            title="Platform"
+                            links={['Our Agents', 'Careers']}
+                        />
+                        <FooterGroup
+                            title="Support"
+                            links={['Contact Us', 'Terms', 'Privacy']}
+                        />
                         <div className="flex items-end text-sm text-[#6E7284] md:justify-end">
                             © 2024 EstatePro Brokerage. All rights reserved.
                         </div>
@@ -153,50 +257,97 @@ export default function Browse() {
 }
 
 function PropertyCard({
-    image,
-    price,
-    address,
-    meta,
-    status,
-    flag,
+    property,
+    canSave,
+    isSaved,
 }: {
-    image: string;
-    price: string;
-    address: string;
-    meta: string[];
-    status: string;
-    flag?: string;
+    property: PublicListingCard;
+    canSave: boolean;
+    isSaved: boolean;
 }) {
+    const image =
+        property.image ??
+        'https://images.unsplash.com/photo-1600607687644-c7171b42498b?auto=format&fit=crop&w=900&q=85';
+    const meta = [
+        property.bedrooms ? `${property.bedrooms} Beds` : 'Beds TBD',
+        property.bathrooms ? `${property.bathrooms} Baths` : 'Baths TBD',
+        property.areaSqft
+            ? `${property.areaSqft.toLocaleString()} SqFt`
+            : 'Area TBD',
+    ];
+
+    const toggleSaved = (event: MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!canSave) {
+            router.visit('/login');
+
+            return;
+        }
+
+        if (isSaved) {
+            router.delete(`/saved-listings/${property.id}`, {
+                preserveScroll: true,
+            });
+
+            return;
+        }
+
+        router.post(
+            '/saved-listings',
+            { listing_id: property.id },
+            { preserveScroll: true },
+        );
+    };
+
     return (
         <Link
-            href="/properties/featured"
+            href={property.href}
             className="overflow-hidden rounded-md border border-[#C9CEDF] bg-white"
         >
             <div className="relative aspect-[16/10]">
                 <img src={image} alt="" className="size-full object-cover" />
-                {flag && (
-                    <span className="absolute left-4 top-4 bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white">
-                        {flag}
+                {property.status === 'Active' && (
+                    <span className="absolute top-4 left-4 bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white">
+                        New Listing
                     </span>
                 )}
-                <button className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/90 text-[#525769] shadow-sm">
-                    <Heart className="size-5" />
+                <button
+                    type="button"
+                    onClick={toggleSaved}
+                    className="absolute top-4 right-4 flex size-10 items-center justify-center rounded-full bg-white/90 text-[#525769] shadow-sm"
+                    aria-label={
+                        isSaved ? 'Remove saved listing' : 'Save listing'
+                    }
+                >
+                    <Heart
+                        className={
+                            isSaved
+                                ? 'size-5 fill-blue-700 text-blue-700'
+                                : 'size-5'
+                        }
+                    />
                 </button>
             </div>
             <div className="p-5">
                 <div className="flex items-center justify-between gap-3">
-                    <div className="text-2xl font-semibold">{price}</div>
+                    <div className="text-2xl font-semibold">
+                        {property.formattedPrice}
+                    </div>
                     <span
                         className={
-                            status === 'Under Offer'
+                            property.status === 'Under Offer'
                                 ? 'rounded-sm border border-[#C9CEDF] bg-[#EEF0F6] px-3 py-1.5 text-xs font-medium text-[#525769]'
                                 : 'rounded-sm border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700'
                         }
                     >
-                        {status}
+                        {property.status}
                     </span>
                 </div>
-                <div className="mt-4 text-sm text-[#6E7284]">{address}</div>
+                <div className="mt-4 text-sm text-[#6E7284]">
+                    {property.address}
+                </div>
                 <div className="mt-7 flex flex-wrap gap-4 border-t border-[#D8DCE8] pt-4 text-sm font-medium text-[#525769]">
                     <Meta icon={<BedDouble />} label={meta[0]} />
                     <Meta icon={<Warehouse />} label={meta[1]} />
@@ -213,6 +364,15 @@ function Meta({ icon, label }: { icon: ReactNode; label: string }) {
             <span className="text-[#6E7284] [&_svg]:size-4">{icon}</span>
             {label}
         </span>
+    );
+}
+
+function EmptyState({ title, body }: { title: string; body: string }) {
+    return (
+        <div className="mt-8 rounded-md border border-dashed border-[#C9CEDF] bg-white p-10 text-center">
+            <div className="text-lg font-semibold">{title}</div>
+            <p className="mt-2 text-sm text-[#6E7284]">{body}</p>
+        </div>
     );
 }
 

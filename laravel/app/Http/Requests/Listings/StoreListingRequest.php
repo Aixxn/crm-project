@@ -35,6 +35,8 @@ class StoreListingRequest extends FormRequest
             'bedrooms' => ['nullable', 'integer', 'min:0', 'max:255'],
             'bathrooms' => ['nullable', 'numeric', 'min:0', 'max:99.9'],
             'area_sqft' => ['nullable', 'integer', 'min:0'],
+            'images' => ['nullable', 'array', 'max:3'],
+            'images.*' => ['file', 'mimes:jpg,jpeg,png', 'max:5120'],
         ];
     }
 

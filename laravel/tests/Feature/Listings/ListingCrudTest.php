@@ -15,6 +15,8 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Viewing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -129,6 +131,67 @@ class ListingCrudTest extends TestCase
                 'address',
                 'price',
             ]);
+    }
+
+    public function test_admin_can_create_listing_with_up_to_three_images(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->userWithRoleAndPermissions('admin');
+        $agent = User::factory()->create();
+        $owner = Contact::factory()->create(['role' => ContactRole::Owner]);
+
+        $this->actingAs($admin)
+            ->post(route('listings.store'), $this->payload([
+                'assigned_agent_id' => $agent->id,
+                'owner_contact_id' => $owner->id,
+                'images' => [
+                    UploadedFile::fake()->image('front.jpg'),
+                    UploadedFile::fake()->image('kitchen.png'),
+                    UploadedFile::fake()->image('suite.jpeg'),
+                ],
+            ]))
+            ->assertRedirect();
+
+        $listing = Listing::query()->where('address', '123 Main Street')->firstOrFail();
+
+        $this->assertDatabaseCount('listing_media', 3);
+        $this->assertDatabaseHas('listing_media', [
+            'listing_id' => $listing->id,
+            'type' => 'photo',
+            'sort_order' => 0,
+        ]);
+
+        $listing->media->each(function ($media): void {
+            $path = str($media->url)->after('/storage/')->toString();
+            Storage::disk('public')->assertExists($path);
+        });
+    }
+
+    public function test_listing_images_must_be_png_or_jpg_and_max_three(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->userWithRoleAndPermissions('admin');
+
+        $this->actingAs($admin)
+            ->post(route('listings.store'), $this->payload([
+                'images' => [
+                    UploadedFile::fake()->image('one.jpg'),
+                    UploadedFile::fake()->image('two.png'),
+                    UploadedFile::fake()->image('three.jpg'),
+                    UploadedFile::fake()->image('four.jpg'),
+                ],
+            ]))
+            ->assertSessionHasErrors('images');
+
+        $this->actingAs($admin)
+            ->post(route('listings.store'), $this->payload([
+                'images' => [
+                    UploadedFile::fake()->create('contract.pdf', 12, 'application/pdf'),
+                ],
+            ]))
+            ->assertSessionHasErrors('images.0');
     }
 
     public function test_create_page_includes_agent_and_owner_options(): void

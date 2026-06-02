@@ -57,6 +57,8 @@ class DatabaseSeeder extends Seeder
         );
 
         $user->assignRole($adminRole);
+
+        $this->call(BuyerPortalDemoSeeder::class);
     }
 
     private function role(string $key, string $name, string $description): Role

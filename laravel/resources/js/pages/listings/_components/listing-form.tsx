@@ -1,5 +1,5 @@
 import { Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, ImagePlus, Save, X } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
             bedrooms: listing?.bedrooms?.toString() ?? '',
             bathrooms: listing?.bathrooms ?? '',
             area_sqft: listing?.area_sqft?.toString() ?? '',
+            images: [],
         });
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -61,12 +62,29 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
             return;
         }
 
-        post(listings.store.form().action);
+        post(listings.store.form().action, { forceFormData: true });
+    };
+
+    const updateImages = (files: FileList | null) => {
+        if (!files) {
+            setData('images', []);
+
+            return;
+        }
+
+        setData('images', Array.from(files).slice(0, 3));
+    };
+
+    const removeImage = (index: number) => {
+        setData(
+            'images',
+            data.images.filter((_, currentIndex) => currentIndex !== index),
+        );
     };
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid gap-4 border-b border-[#C3C6D7]/70 bg-white px-4 py-5 md:grid-cols-2 md:px-6 lg:grid-cols-4">
+            <div className="grid gap-4 border-b border-[#c4c8d9] bg-white px-6 py-5 md:grid-cols-2 lg:grid-cols-4">
                 <Field label="Status" error={errors.status}>
                     <Select
                         value={data.status}
@@ -74,7 +92,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                             setData('status', value as ListingStatus)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full border-[#c4c8d9] bg-white">
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -94,7 +112,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                             setData('assigned_agent_id', value)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full border-[#c4c8d9] bg-white">
                             <SelectValue placeholder="Select agent" />
                         </SelectTrigger>
                         <SelectContent>
@@ -117,7 +135,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                             setData('owner_contact_id', value)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full border-[#c4c8d9] bg-white">
                             <SelectValue placeholder="Select owner" />
                         </SelectTrigger>
                         <SelectContent>
@@ -132,6 +150,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                 <Field label="Property type" error={errors.property_type}>
                     <Input
+                        className="border-[#c4c8d9] bg-white"
                         value={data.property_type}
                         onChange={(event) =>
                             setData('property_type', event.target.value)
@@ -141,10 +160,11 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                 </Field>
             </div>
 
-            <div className="grid gap-5 px-4 md:grid-cols-[minmax(0,1fr)_18rem] md:px-6">
+            <div className="grid gap-5 px-6 md:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="space-y-4">
                     <Field label="Address" error={errors.address}>
                         <Input
+                            className="border-[#c4c8d9] bg-white"
                             value={data.address}
                             onChange={(event) =>
                                 setData('address', event.target.value)
@@ -156,6 +176,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <Field label="Price" error={errors.price}>
                             <Input
+                                className="border-[#c4c8d9] bg-white"
                                 type="number"
                                 min="0"
                                 step="0.01"
@@ -168,6 +189,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                         <Field label="Bedrooms" error={errors.bedrooms}>
                             <Input
+                                className="border-[#c4c8d9] bg-white"
                                 type="number"
                                 min="0"
                                 value={data.bedrooms}
@@ -179,6 +201,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                         <Field label="Bathrooms" error={errors.bathrooms}>
                             <Input
+                                className="border-[#c4c8d9] bg-white"
                                 type="number"
                                 min="0"
                                 step="0.5"
@@ -191,6 +214,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                         <Field label="Area sqft" error={errors.area_sqft}>
                             <Input
+                                className="border-[#c4c8d9] bg-white"
                                 type="number"
                                 min="0"
                                 value={data.area_sqft}
@@ -200,28 +224,81 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                             />
                         </Field>
                     </div>
+
+                    {!isEditing && (
+                        <Field label="Listing images" error={errors.images}>
+                            <div className="rounded-md border border-dashed border-[#c4c8d9] bg-white p-4">
+                                <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-sm bg-[#eef1fb] px-4 text-center text-sm text-[#596071] hover:bg-[#e5e9f7]">
+                                    <ImagePlus className="mb-3 size-8 text-blue-700" />
+                                    <span className="font-medium text-[#1f2330]">
+                                        Upload up to 3 photos
+                                    </span>
+                                    <span className="mt-1">
+                                        PNG or JPG only
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg"
+                                        multiple
+                                        className="sr-only"
+                                        onChange={(event) =>
+                                            updateImages(event.target.files)
+                                        }
+                                    />
+                                </label>
+                                {data.images.length > 0 && (
+                                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                        {data.images.map((image, index) => (
+                                            <div
+                                                key={`${image.name}-${index}`}
+                                                className="flex items-center justify-between gap-2 rounded-sm border border-[#c4c8d9] px-3 py-2 text-sm text-[#303545]"
+                                            >
+                                                <span className="truncate">
+                                                    {image.name}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeImage(index)
+                                                    }
+                                                    className="text-[#596071] hover:text-red-600"
+                                                    aria-label={`Remove ${image.name}`}
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="mt-3 text-xs text-[#596071]">
+                                    If more than 3 files are selected, only the
+                                    first 3 will be uploaded.
+                                </div>
+                            </div>
+                        </Field>
+                    )}
                 </div>
 
-                <div className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                    <div className="text-sm font-medium text-neutral-950">
-                        Form state
+                <div className="rounded-md border border-[#c4c8d9] bg-white p-4">
+                    <div className="text-sm font-semibold text-[#1f2330]">
+                        Listing setup
                     </div>
                     <dl className="mt-4 space-y-3 text-sm">
                         <div className="flex items-center justify-between gap-4">
-                            <dt className="text-neutral-500">Mode</dt>
-                            <dd className="font-medium text-neutral-900">
+                            <dt className="text-[#596071]">Mode</dt>
+                            <dd className="font-medium text-[#1f2330]">
                                 {isEditing ? 'Edit' : 'Create'}
                             </dd>
                         </div>
                         <div className="flex items-center justify-between gap-4">
-                            <dt className="text-neutral-500">Agents</dt>
-                            <dd className="font-medium text-neutral-900">
+                            <dt className="text-[#596071]">Agents</dt>
+                            <dd className="font-medium text-[#1f2330]">
                                 {agents.length}
                             </dd>
                         </div>
                         <div className="flex items-center justify-between gap-4">
-                            <dt className="text-neutral-500">Owners</dt>
-                            <dd className="font-medium text-neutral-900">
+                            <dt className="text-[#596071]">Owners</dt>
+                            <dd className="font-medium text-[#1f2330]">
                                 {owners.length}
                             </dd>
                         </div>
@@ -229,8 +306,12 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
-                <Button variant="outline" asChild>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#c4c8d9] bg-[#f7f5fc] px-6 py-4">
+                <Button
+                    variant="outline"
+                    asChild
+                    className="rounded-sm border-[#c4c8d9] bg-white text-[#303545] hover:bg-[#eef1fb]"
+                >
                     <Link
                         href={
                             listing ? listings.show(listing) : listings.index()
@@ -240,7 +321,11 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                         Cancel
                     </Link>
                 </Button>
-                <Button type="submit" disabled={processing}>
+                <Button
+                    type="submit"
+                    disabled={processing}
+                    className="rounded-sm bg-blue-700 text-white hover:bg-blue-800"
+                >
                     <Save />
                     {processing ? 'Saving' : 'Save listing'}
                 </Button>
@@ -260,7 +345,9 @@ function Field({
 }) {
     return (
         <div className="space-y-2">
-            <Label>{label}</Label>
+            <Label className="text-sm font-medium text-[#303545]">
+                {label}
+            </Label>
             {children}
             {error && (
                 <p className="text-xs font-medium text-red-600">{error}</p>

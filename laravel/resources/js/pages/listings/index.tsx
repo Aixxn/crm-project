@@ -2,29 +2,27 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Bath,
     BedDouble,
-    Building2,
-    Eye,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    ImageIcon,
+    ListFilter,
+    MapPin,
     Pencil,
     Plus,
     Ruler,
-    Search,
-    SlidersHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { dashboard } from '@/routes';
 import listings from '@/routes/listings';
-import type { ListingStatus, PaginatedListings } from './types';
+import type {
+    AgentSummary,
+    ListingStatus,
+    ListingSummary,
+    PaginatedListings,
+} from './types';
 
 type ListingIndexProps = {
     listings: PaginatedListings;
@@ -34,8 +32,8 @@ type ListingIndexProps = {
     };
 };
 
-const statuses: Array<ListingStatus | 'All'> = [
-    'All',
+const statuses: Array<ListingStatus | 'All Active'> = [
+    'All Active',
     'Draft',
     'Active',
     'Under Offer',
@@ -48,14 +46,14 @@ export default function ListingIndex({
     filters,
 }: ListingIndexProps) {
     const [search, setSearch] = useString(filters.search ?? '');
-    const [status, setStatus] = useString(filters.status ?? 'All');
+    const [status, setStatus] = useString(filters.status ?? 'All Active');
 
     const applyFilters = () => {
         router.get(
             listings.index().url,
             {
                 search: search || undefined,
-                status: status === 'All' ? undefined : status,
+                status: status === 'All Active' ? undefined : status,
             },
             {
                 preserveState: true,
@@ -64,226 +62,147 @@ export default function ListingIndex({
         );
     };
 
+    const clearFilters = () => {
+        setSearch('');
+        setStatus('All Active');
+        router.get(listings.index().url, {}, { replace: true });
+    };
+
     return (
         <>
-            <Head title="Listings" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+            <Head title="Properties" />
+            <main className="min-h-full bg-[#f7f5fc] text-[#1f2330]">
+                <section className="px-6 py-7">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
-                                Listings
+                            <h1 className="text-3xl font-semibold tracking-tight">
+                                Properties
                             </h1>
-                            <p className="mt-1 text-sm text-neutral-600">
-                                {paginated.total} records in the active listing
-                                workspace.
+                            <p className="mt-2 text-sm text-[#596071]">
+                                Manage and track your active inventory
                             </p>
                         </div>
-                        <Button asChild>
-                            <Link href={listings.create()}>
-                                <Plus />
-                                New listing
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="space-y-4 p-4 md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white">
-                        <div className="grid gap-3 border-b border-[#C3C6D7]/70 p-3 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
-                            <div className="relative">
-                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-neutral-500" />
-                                <Input
-                                    value={search}
-                                    onChange={(event) =>
-                                        setSearch(event.target.value)
-                                    }
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Enter') {
-                                            applyFilters();
-                                        }
-                                    }}
-                                    className="pl-9"
-                                    placeholder="Search address or property type"
-                                />
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="inline-flex rounded-sm border border-[#c4c8d9] bg-white p-1 text-sm">
+                                <button className="h-9 rounded-sm bg-[#eef1fb] px-4 font-semibold">
+                                    List
+                                </button>
+                                <button className="h-9 px-4 font-medium text-[#4f5668]">
+                                    Map
+                                </button>
                             </div>
-                            <Select value={status} onValueChange={setStatus}>
-                                <SelectTrigger className="w-full bg-white">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {statuses.map((item) => (
-                                        <SelectItem key={item} value={item}>
-                                            {item}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Button variant="outline" onClick={applyFilters}>
-                                <SlidersHorizontal />
-                                Apply
+                            <Button
+                                asChild
+                                className="h-10 rounded-sm bg-blue-700 px-5 text-white hover:bg-blue-800"
+                            >
+                                <Link href={listings.create()}>
+                                    <Plus className="size-4" />
+                                    Add Listing
+                                </Link>
                             </Button>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap items-center gap-4 rounded-sm border border-[#c4c8d9] bg-white px-4 py-3 text-sm text-[#4f5668]">
+                        <div className="flex items-center gap-2 font-medium uppercase tracking-wide">
+                            <ListFilter className="size-4" />
+                            Filters
+                        </div>
+                        <Divider />
+                        <label className="flex items-center gap-2">
+                            <span>Status:</span>
+                            <select
+                                value={status}
+                                onChange={(event) =>
+                                    setStatus(event.target.value)
+                                }
+                                className="bg-transparent font-medium text-[#202432] outline-none"
+                            >
+                                {statuses.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="size-4" />
+                        </label>
+                        <Divider />
+                        <button className="flex items-center gap-2">
+                            <span>Price: Any</span>
+                            <ChevronDown className="size-4" />
+                        </button>
+                        <Divider />
+                        <label className="flex min-w-60 flex-1 items-center gap-2">
+                            <MapPin className="size-4" />
+                            <input
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        applyFilters();
+                                    }
+                                }}
+                                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[#707789]"
+                                placeholder="Neighborhood, City, or Zip"
+                            />
+                        </label>
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="ml-auto text-xs font-semibold text-blue-700"
+                        >
+                            Clear
+                        </button>
+                    </div>
+
+                    <section className="mt-8 overflow-hidden rounded-md border border-[#c4c8d9] bg-white">
+                        <div className="grid min-w-[58rem] grid-cols-[3rem_minmax(18rem,1fr)_8rem_9rem_10rem_10rem_8rem] items-center bg-[#eef1fb] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#5e6475]">
+                            <input type="checkbox" className="size-4" />
+                            <div>Property</div>
+                            <div>Status</div>
+                            <div>Price</div>
+                            <div>Specs</div>
+                            <div>Agent</div>
+                            <div className="text-right">Actions</div>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[860px] text-left text-sm">
-                                <thead className="bg-neutral-50 text-xs font-medium text-neutral-500 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-3">Property</th>
-                                        <th className="px-4 py-3">Status</th>
-                                        <th className="px-4 py-3">Price</th>
-                                        <th className="px-4 py-3">Specs</th>
-                                        <th className="px-4 py-3">Owner</th>
-                                        <th className="px-4 py-3">Agent</th>
-                                        <th className="px-4 py-3 text-right">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#C3C6D7]/60">
-                                    {paginated.data.map((listing) => (
-                                        <tr
-                                            key={listing.id}
-                                            className="bg-white align-top hover:bg-[#FAF8FF]"
-                                        >
-                                            <td className="px-4 py-4">
-                                                <div className="flex gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#C3C6D7] bg-[#FAF8FF] text-neutral-700">
-                                                        <Building2 className="size-4" />
-                                                    </div>
-                                                    <div>
-                                                        <Link
-                                                            href={listings.show(
-                                                                listing,
-                                                            )}
-                                                            className="font-medium text-neutral-950 hover:underline"
-                                                        >
-                                                            {listing.address}
-                                                        </Link>
-                                                        <div className="mt-1 text-xs text-neutral-500">
-                                                            {listing.property_type ||
-                                                                'Unspecified type'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <StatusBadge
-                                                    status={listing.status}
-                                                />
-                                            </td>
-                                            <td className="px-4 py-4 font-medium text-neutral-950">
-                                                {money(listing.price)}
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
-                                                    <Spec
-                                                        icon={<BedDouble />}
-                                                        label={
-                                                            listing.bedrooms ??
-                                                            '-'
-                                                        }
-                                                    />
-                                                    <Spec
-                                                        icon={<Bath />}
-                                                        label={
-                                                            listing.bathrooms ??
-                                                            '-'
-                                                        }
-                                                    />
-                                                    <Spec
-                                                        icon={<Ruler />}
-                                                        label={
-                                                            listing.area_sqft ??
-                                                            '-'
-                                                        }
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 text-neutral-700">
-                                                {listing.owner
-                                                    ? contactName(listing.owner)
-                                                    : '-'}
-                                            </td>
-                                            <td className="px-4 py-4 text-neutral-700">
-                                                {listing.assigned_agent?.name ??
-                                                    '-'}
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        size="icon"
-                                                        variant="outline"
-                                                        asChild
-                                                        aria-label="View listing"
-                                                    >
-                                                        <Link
-                                                            href={listings.show(
-                                                                listing,
-                                                            )}
-                                                        >
-                                                            <Eye />
-                                                        </Link>
-                                                    </Button>
-                                                    <Button
-                                                        size="icon"
-                                                        variant="outline"
-                                                        asChild
-                                                        aria-label="Edit listing"
-                                                    >
-                                                        <Link
-                                                            href={listings.edit(
-                                                                listing,
-                                                            )}
-                                                        >
-                                                            <Pencil />
-                                                        </Link>
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <div className="min-w-[58rem] divide-y divide-[#d8dbea]">
+                                {paginated.data.map((listing) => (
+                                    <PropertyRow
+                                        key={listing.id}
+                                        listing={listing}
+                                    />
+                                ))}
+                            </div>
                         </div>
 
                         {paginated.data.length === 0 && (
-                            <div className="px-4 py-14 text-center text-sm text-neutral-600">
+                            <div className="px-4 py-14 text-center text-sm text-[#687083]">
                                 No listings match the current filters.
                             </div>
                         )}
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 px-4 py-3 text-sm text-neutral-600">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d8dbea] px-4 py-3 text-sm text-[#596071]">
                             <span>
-                                Showing {paginated.from ?? 0}-
-                                {paginated.to ?? 0} of {paginated.total}
+                                Showing {paginated.from ?? 0} to{' '}
+                                {paginated.to ?? 0} of {paginated.total} entries
                             </span>
-                            <div className="flex flex-wrap gap-1">
-                                {paginated.links.map((link) => (
-                                    <Button
+                            <div className="flex items-center gap-2">
+                                {uniquePaginationLinks(paginated.links).map((link) => (
+                                    <PaginationLink
                                         key={`${link.label}-${link.url}`}
-                                        size="sm"
-                                        variant={
-                                            link.active ? 'default' : 'outline'
-                                        }
-                                        disabled={!link.url}
-                                        asChild={Boolean(link.url)}
-                                    >
-                                        {link.url ? (
-                                            <Link href={link.url}>
-                                                {paginationLabel(link.label)}
-                                            </Link>
-                                        ) : (
-                                            <span>
-                                                {paginationLabel(link.label)}
-                                            </span>
-                                        )}
-                                    </Button>
+                                        label={paginationLabel(link.label)}
+                                        url={link.url}
+                                        active={link.active}
+                                    />
                                 ))}
                             </div>
                         </div>
                     </section>
-                </div>
+                </section>
             </main>
         </>
     );
@@ -302,45 +221,224 @@ ListingIndex.layout = {
     ],
 };
 
-function StatusBadge({ status }: { status: ListingStatus }) {
+function PropertyRow({ listing }: { listing: ListingSummary }) {
+    const image = listing.media?.[0]?.url;
+
+    return (
+        <div className="grid grid-cols-[3rem_minmax(18rem,1fr)_8rem_9rem_10rem_10rem_8rem] items-center px-4 py-3 text-sm">
+            <input type="checkbox" className="size-4" />
+            <div className="flex min-w-0 items-center gap-4">
+                <Link
+                    href={listings.show(listing)}
+                    className="block size-16 shrink-0 overflow-hidden rounded-sm border border-[#cfd3e3] bg-[#eef1fb]"
+                >
+                    {image ? (
+                        <img
+                            src={image}
+                            alt={listing.address}
+                            className="size-full object-cover"
+                        />
+                    ) : (
+                        <div className="flex size-full items-center justify-center text-[#858b9b]">
+                            <ImageIcon className="size-5" />
+                        </div>
+                    )}
+                </Link>
+                <div className="min-w-0">
+                    <Link
+                        href={listings.show(listing)}
+                        className="truncate font-semibold text-[#1f2330] hover:text-blue-700"
+                    >
+                        {listing.address}
+                    </Link>
+                    <div className="mt-1 truncate text-xs text-[#687083]">
+                        {listing.property_type || 'Unspecified type'}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <StatusPill status={listing.status} />
+            </div>
+            <div className="font-semibold text-[#1f2330]">
+                {listing.status === 'Draft' ? 'TBD' : money(listing.price)}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#5f6677]">
+                <Spec icon={<BedDouble />} label={listing.bedrooms ?? '-'} />
+                <Spec icon={<Bath />} label={listing.bathrooms ?? '-'} />
+                <Spec icon={<Ruler />} label={listing.area_sqft ?? '-'} />
+            </div>
+            <AgentCell agent={listing.assigned_agent} />
+            <div className="flex justify-end gap-2">
+                <Link
+                    href={listings.show(listing)}
+                    className="inline-flex h-8 items-center rounded-sm border border-[#c4c8d9] px-3 text-xs font-semibold hover:bg-[#eef1fb]"
+                >
+                    View
+                </Link>
+                <Link
+                    href={listings.edit(listing)}
+                    className="inline-flex h-8 items-center rounded-sm border border-[#c4c8d9] px-2 text-[#4f5668] hover:bg-[#eef1fb]"
+                    aria-label="Edit listing"
+                >
+                    <Pencil className="size-4" />
+                </Link>
+            </div>
+        </div>
+    );
+}
+
+function AgentCell({ agent }: { agent?: AgentSummary | null }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-full bg-[#dfe6f6] text-[0.65rem] font-semibold text-blue-800">
+                {initials(agent?.name ?? 'Unassigned')}
+            </div>
+            <span className="truncate text-sm text-[#2d3242]">
+                {shortName(agent?.name) ?? '-'}
+            </span>
+        </div>
+    );
+}
+
+function StatusPill({ status }: { status: ListingStatus }) {
     const classes: Record<ListingStatus, string> = {
-        Draft: 'border-neutral-300 bg-neutral-100 text-neutral-700',
-        Active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        'Under Offer': 'border-amber-200 bg-amber-50 text-amber-700',
-        Closed: 'border-sky-200 bg-sky-50 text-sky-700',
-        'Closed Lost': 'border-red-200 bg-red-50 text-red-700',
+        Draft: 'bg-[#e5e7ef] text-[#686e7e]',
+        Active: 'bg-[#e7f0ff] text-blue-700',
+        'Under Offer': 'bg-[#ffe8dd] text-[#b24a1b]',
+        Closed: 'bg-[#e5f5ef] text-[#08784f]',
+        'Closed Lost': 'bg-[#fee2e2] text-[#b91c1c]',
     };
 
     return (
-        <Badge variant="outline" className={classes[status]}>
+        <span
+            className={`inline-flex h-7 items-center rounded-sm px-3 text-xs font-semibold ${classes[status]}`}
+        >
             {status}
-        </Badge>
+        </span>
     );
 }
 
 function Spec({ icon, label }: { icon: ReactNode; label: string | number }) {
     return (
-        <span className="inline-flex h-7 items-center gap-1 rounded-md border border-[#C3C6D7] px-2">
+        <span className="inline-flex items-center gap-1 [&_svg]:size-3.5">
             {icon}
             {label}
         </span>
     );
 }
 
+function PaginationLink({
+    label,
+    url,
+    active,
+}: {
+    label: string;
+    url: string | null;
+    active: boolean;
+}) {
+    const content =
+        label === 'Previous' ? (
+            <ChevronLeft className="size-4" />
+        ) : label === 'Next' ? (
+            <ChevronRight className="size-4" />
+        ) : (
+            label
+        );
+    const classes = active
+        ? 'bg-blue-700 text-white'
+        : 'border border-transparent text-[#4f5668] hover:border-[#c4c8d9] hover:bg-[#eef1fb]';
+
+    if (!url) {
+        return (
+            <span
+                className={`inline-flex size-9 items-center justify-center rounded-sm opacity-50 ${classes}`}
+            >
+                {content}
+            </span>
+        );
+    }
+
+    return (
+        <Link
+            href={url}
+            className={`inline-flex size-9 items-center justify-center rounded-sm text-sm font-semibold ${classes}`}
+        >
+            {content}
+        </Link>
+    );
+}
+
+function Divider() {
+    return <span className="h-6 w-px bg-[#cfd3e3]" />;
+}
+
 function money(value: string | number) {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'PHP',
         maximumFractionDigits: 0,
     }).format(Number(value));
 }
 
-function contactName(contact: { first_name: string; last_name: string }) {
-    return `${contact.first_name} ${contact.last_name}`.trim();
+function initials(name: string) {
+    return name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase();
+}
+
+function shortName(name?: string | null) {
+    if (!name) {
+        return null;
+    }
+
+    const parts = name.split(/\s+/).filter(Boolean);
+
+    if (parts.length < 2) {
+        return name;
+    }
+
+    return `${parts[0][0]}. ${parts.at(-1)}`;
 }
 
 function paginationLabel(label: string) {
-    return label.replace('&laquo;', 'Previous').replace('&raquo;', 'Next');
+    const normalized = label
+        .replace(/&laquo;|«/g, '')
+        .replace(/&raquo;|»/g, '')
+        .trim();
+
+    if (/previous/i.test(normalized)) {
+        return 'Previous';
+    }
+
+    if (/next/i.test(normalized)) {
+        return 'Next';
+    }
+
+    return normalized;
+}
+
+function uniquePaginationLinks(links: PaginatedListings['links']) {
+    const seen = new Set<string>();
+
+    return links.filter((link) => {
+        const label = paginationLabel(link.label);
+        const key =
+            label === 'Previous' || label === 'Next'
+                ? label
+                : `${label}-${link.url ?? 'disabled'}`;
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+
+        return true;
+    });
 }
 
 function useString(initialValue: string): [string, (value: string) => void] {

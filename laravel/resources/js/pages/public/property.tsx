@@ -1,155 +1,246 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     Bath,
     BedDouble,
     Bell,
     Building2,
     CalendarClock,
-    Car,
-    Dumbbell,
-    Film,
     Heart,
-    Home,
     Mail,
-    Map,
     Phone,
     Ruler,
     Search,
     Share2,
-    Sparkles,
-    Waves,
-    Wine,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import type { User } from '@/types';
 import { PublicUserMenu } from './_components/public-user-menu';
 
-const heroImage =
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80';
-const loungeImage =
-    'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=900&q=80';
-const kitchenImage =
-    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=80';
-const brokerImage =
-    'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=240&q=80';
+type PublicListingDetail = {
+    id: string;
+    href: string;
+    image?: string | null;
+    formattedPrice: string;
+    address: string;
+    propertyType?: string | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    areaSqft?: number | null;
+    status: string;
+    media?: { id: string; url: string; type: string }[];
+    agent?: {
+        name?: string | null;
+        email?: string | null;
+    };
+};
 
-const amenities = [
-    { label: 'Infinity Pool', icon: <Waves /> },
-    { label: '6-Car Garage', icon: <Car /> },
-    { label: 'Wine Cellar', icon: <Wine /> },
-    { label: 'Smart Home', icon: <Home /> },
-    { label: 'Home Gym', icon: <Dumbbell /> },
-    { label: 'Theater Room', icon: <Film /> },
-];
+type PropertyProps = {
+    listing?: PublicListingDetail | null;
+    isSaved?: boolean;
+    submitInquiryUrl?: string | null;
+    requestViewingUrl?: string | null;
+    saveListingUrl?: string;
+    unsaveListingUrl?: string | null;
+};
 
-const neighborhoodStats = [
-    ['Walk Score', '85'],
-    ['Transit Score', '42'],
-    ['Schools', '10/10'],
-    ['Crime Rate', 'Low'],
-];
-
-export default function Property() {
+export default function Property({
+    listing,
+    isSaved = false,
+    submitInquiryUrl,
+    requestViewingUrl,
+    saveListingUrl = '/saved-listings',
+    unsaveListingUrl,
+}: PropertyProps) {
     const { auth } = usePage().props;
+
+    if (!listing) {
+        return (
+            <>
+                <Head title="Listing unavailable" />
+                <main className="min-h-screen bg-[#F5F4FA] text-[#151826]">
+                    <PropertyHeader user={auth.user} />
+                    <section className="mx-auto max-w-3xl px-5 py-20 text-center">
+                        <div className="rounded-md border border-dashed border-[#C9CEDF] bg-white p-10">
+                            <h1 className="text-3xl font-semibold">
+                                Listing unavailable
+                            </h1>
+                            <p className="mt-3 text-sm leading-6 text-[#626778]">
+                                This property is no longer available or is not
+                                visible in the buyer portal.
+                            </p>
+                            <Link
+                                href="/browse"
+                                className="mt-6 inline-flex h-11 items-center justify-center rounded-sm bg-blue-700 px-6 text-sm font-semibold text-white hover:bg-blue-800"
+                            >
+                                Browse available listings
+                            </Link>
+                        </div>
+                    </section>
+                </main>
+            </>
+        );
+    }
+
+    const gallery = listing.media?.length
+        ? listing.media
+        : listing.image
+          ? [{ id: 'primary', url: listing.image, type: 'photo' }]
+          : [];
+
+    const toggleSaved = () => {
+        if (!auth.user) {
+            router.visit('/login');
+
+            return;
+        }
+
+        if (isSaved && unsaveListingUrl) {
+            router.delete(unsaveListingUrl, { preserveScroll: true });
+
+            return;
+        }
+
+        router.post(
+            saveListingUrl,
+            { listing_id: listing.id },
+            { preserveScroll: true },
+        );
+    };
 
     return (
         <>
-            <Head title="1420 Modernist Way" />
+            <Head title={listing.address} />
             <main className="min-h-screen bg-[#F5F4FA] text-[#151826]">
                 <PropertyHeader user={auth.user} />
 
                 <section className="mx-auto max-w-7xl px-4 py-6 md:px-6">
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
                         <div className="relative min-h-[33rem] overflow-hidden rounded-md bg-neutral-900 text-white">
-                            <img
-                                src={heroImage}
-                                alt="Modern Beverly Hills residence exterior"
-                                className="absolute inset-0 size-full object-cover"
-                            />
+                            {gallery[0] ? (
+                                <img
+                                    src={gallery[0].url}
+                                    alt={listing.address}
+                                    className="absolute inset-0 size-full object-cover"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center bg-[#E8E9ED] text-sm text-[#626778]">
+                                    No image available
+                                </div>
+                            )}
                             <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/15 to-black/10" />
-                            <div className="absolute left-5 top-5 rounded-sm bg-blue-700 px-3 py-1 text-xs font-bold uppercase tracking-wide">
-                                Featured
+                            <div className="absolute top-5 left-5 rounded-sm bg-blue-700 px-3 py-1 text-xs font-bold tracking-wide uppercase">
+                                {listing.status}
                             </div>
-                            <div className="absolute bottom-6 left-5 right-5">
-                                <div className="mb-3 text-sm font-semibold">Active Listing</div>
-                                <div className="text-4xl font-semibold tracking-tight md:text-5xl">$8,450,000</div>
+                            <div className="absolute right-5 bottom-6 left-5">
+                                <div className="mb-3 text-sm font-semibold">
+                                    {listing.status} Listing
+                                </div>
+                                <div className="text-4xl font-semibold tracking-tight md:text-5xl">
+                                    {listing.formattedPrice}
+                                </div>
                                 <p className="mt-3 max-w-2xl text-sm text-white/85">
-                                    1420 Modernist Way, Beverly Hills, CA 90210
+                                    {listing.address}
                                 </p>
                                 <div className="mt-5 flex flex-wrap gap-3 text-sm font-medium text-white/90">
-                                    <HeroMetric icon={<BedDouble />} label="5 Beds" />
-                                    <HeroMetric icon={<Bath />} label="6.5 Baths" />
-                                    <HeroMetric icon={<Ruler />} label="8,200 Sq Ft" />
-                                    <HeroMetric icon={<Sparkles />} label="0.75 Acres" />
+                                    <HeroMetric
+                                        icon={<BedDouble />}
+                                        label={`${listing.bedrooms ?? 'TBD'} Beds`}
+                                    />
+                                    <HeroMetric
+                                        icon={<Bath />}
+                                        label={`${listing.bathrooms ?? 'TBD'} Baths`}
+                                    />
+                                    <HeroMetric
+                                        icon={<Ruler />}
+                                        label={
+                                            listing.areaSqft
+                                                ? `${listing.areaSqft.toLocaleString()} Sq Ft`
+                                                : 'Area TBD'
+                                        }
+                                    />
                                 </div>
                             </div>
-                            <div className="absolute bottom-6 right-5 hidden gap-3 md:flex">
+                            <div className="absolute right-5 bottom-6 hidden gap-3 md:flex">
                                 <IconAction label="Share">
                                     <Share2 className="size-4" />
                                 </IconAction>
-                                {auth.user && (
-                                    <IconAction label="Save">
-                                        <Heart className="size-4" />
-                                    </IconAction>
-                                )}
+                                <IconAction
+                                    label={
+                                        isSaved
+                                            ? 'Remove saved listing'
+                                            : 'Save'
+                                    }
+                                    onClick={toggleSaved}
+                                >
+                                    <Heart
+                                        className={
+                                            isSaved
+                                                ? 'size-4 fill-blue-700 text-blue-700'
+                                                : 'size-4'
+                                        }
+                                    />
+                                </IconAction>
                             </div>
                         </div>
 
                         <div className="grid gap-3">
-                            <img
-                                src={loungeImage}
-                                alt="Open living room"
-                                className="h-56 w-full rounded-md object-cover lg:h-64"
+                            <GallerySlot media={gallery[1]} />
+                            <GallerySlot media={gallery[2]} />
+                            <ContactCard
+                                listing={listing}
+                                submitInquiryUrl={submitInquiryUrl}
+                                requestViewingUrl={requestViewingUrl}
+                                isAuthenticated={Boolean(auth.user)}
                             />
-                            <img
-                                src={kitchenImage}
-                                alt="Designer kitchen"
-                                className="h-56 w-full rounded-md object-cover lg:h-64"
-                            />
-                            <ContactCard />
                         </div>
                     </div>
 
                     <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
                         <div className="space-y-8">
                             <section className="rounded-md bg-white p-6 shadow-sm">
-                                <h1 className="text-2xl font-semibold">Property Overview</h1>
+                                <h1 className="text-2xl font-semibold">
+                                    Property Overview
+                                </h1>
                                 <p className="mt-4 text-sm leading-7 text-[#626778]">
-                                    This architectural masterpiece sits behind private gates in one of Beverly Hills'
-                                    most coveted enclaves. Walls of glass open the main living areas to sweeping
-                                    terraces, a resort-style pool, and mature landscaping designed for privacy. The
-                                    residence combines gallery-scale entertaining rooms with quiet bedroom suites,
-                                    wellness amenities, and fully integrated smart home systems.
+                                    This {listing.propertyType ?? 'property'} is
+                                    currently listed as {listing.status}. Review
+                                    the available facts and contact the listing
+                                    agent for disclosures, showing windows, and
+                                    next steps.
                                 </p>
-                                <button className="mt-5 text-xs font-bold uppercase tracking-wide text-blue-700">
-                                    Read Full Description
-                                </button>
-                            </section>
-
-                            <section>
-                                <h2 className="text-xl font-semibold">Key Amenities</h2>
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {amenities.map((amenity) => (
-                                        <Amenity key={amenity.label} icon={amenity.icon} label={amenity.label} />
-                                    ))}
-                                </div>
                             </section>
 
                             <section className="rounded-md bg-white p-6 shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                    <h2 className="text-xl font-semibold">Neighborhood Insights</h2>
-                                    <Button variant="outline" className="rounded-sm">
-                                        <Map className="size-4" />
-                                        Interactive Map
-                                    </Button>
-                                </div>
-                                <MapPreview />
+                                <h2 className="text-xl font-semibold">
+                                    Listing Facts
+                                </h2>
                                 <div className="mt-5 grid gap-3 sm:grid-cols-4">
-                                    {neighborhoodStats.map(([label, value]) => (
-                                        <div key={label} className="rounded-md border border-[#E0E3EE] p-4 text-center">
-                                            <div className="text-2xl font-semibold text-blue-700">{value}</div>
-                                            <div className="mt-1 text-xs font-bold uppercase tracking-wide text-[#6D7282]">
+                                    {[
+                                        ['Type', listing.propertyType ?? 'TBD'],
+                                        [
+                                            'Beds',
+                                            String(listing.bedrooms ?? 'TBD'),
+                                        ],
+                                        [
+                                            'Baths',
+                                            String(listing.bathrooms ?? 'TBD'),
+                                        ],
+                                        [
+                                            'Area',
+                                            listing.areaSqft
+                                                ? `${listing.areaSqft.toLocaleString()}`
+                                                : 'TBD',
+                                        ],
+                                    ].map(([label, value]) => (
+                                        <div
+                                            key={label}
+                                            className="rounded-md border border-[#E0E3EE] p-4 text-center"
+                                        >
+                                            <div className="text-2xl font-semibold text-blue-700">
+                                                {value}
+                                            </div>
+                                            <div className="mt-1 text-xs font-bold tracking-wide text-[#6D7282] uppercase">
                                                 {label}
                                             </div>
                                         </div>
@@ -161,29 +252,12 @@ export default function Property() {
                         <aside className="hidden lg:block" />
                     </div>
                 </section>
-
-                <footer className="border-t border-[#D8DCE8] bg-white">
-                    <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 text-sm text-[#626778] md:flex-row md:items-center md:justify-between">
-                        <div className="flex items-center gap-2 font-semibold text-blue-700">
-                            <Building2 className="size-5" />
-                            EstatePro
-                        </div>
-                        <div>Copyright 2026 EstatePro. All rights reserved.</div>
-                        <div className="flex flex-wrap gap-5">
-                            {['Terms', 'Privacy', 'Contact Us', 'Our Agents', 'Careers'].map((item) => (
-                                <Link key={item} href="#" className="hover:text-blue-700">
-                                    {item}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                </footer>
             </main>
         </>
     );
 }
 
-function PropertyHeader({ user }: { user?: User }) {
+function PropertyHeader({ user }: { user?: User | null }) {
     const navItems = [
         { title: 'Browse', href: '/browse', authOnly: false },
         { title: 'Saved', href: '/my-home', authOnly: true },
@@ -195,7 +269,10 @@ function PropertyHeader({ user }: { user?: User }) {
         <header className="border-b border-[#D8DCE8] bg-white">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-5 px-5">
                 <div className="flex min-w-0 items-center gap-5">
-                    <Link href="/" className="flex shrink-0 items-center gap-2 text-xl font-semibold text-blue-700">
+                    <Link
+                        href="/"
+                        className="flex shrink-0 items-center gap-2 text-xl font-semibold text-blue-700"
+                    >
                         <Building2 className="size-6" />
                         EstatePro
                     </Link>
@@ -208,7 +285,7 @@ function PropertyHeader({ user }: { user?: User }) {
                     </label>
                 </div>
 
-                <nav className="hidden h-16 items-center gap-9 text-xs font-bold uppercase tracking-wide text-[#6E7284] md:flex">
+                <nav className="hidden h-16 items-center gap-9 text-xs font-bold tracking-wide text-[#6E7284] uppercase md:flex">
                     {navItems
                         .filter((item) => !item.authOnly || user)
                         .map((item) => (
@@ -238,7 +315,7 @@ function PropertyHeader({ user }: { user?: User }) {
                     ) : (
                         <Link
                             href="/login"
-                            className="inline-flex h-10 items-center justify-center rounded-sm bg-blue-700 px-6 text-xs font-bold uppercase tracking-wide text-white hover:bg-blue-800"
+                            className="inline-flex h-10 items-center justify-center rounded-sm bg-blue-700 px-6 text-xs font-bold tracking-wide text-white uppercase hover:bg-blue-800"
                         >
                             Sign In
                         </Link>
@@ -249,54 +326,189 @@ function PropertyHeader({ user }: { user?: User }) {
     );
 }
 
-function ContactCard() {
+function ContactCard({
+    listing,
+    submitInquiryUrl,
+    requestViewingUrl,
+    isAuthenticated,
+}: {
+    listing: PublicListingDetail;
+    submitInquiryUrl?: string | null;
+    requestViewingUrl?: string | null;
+    isAuthenticated: boolean;
+}) {
+    const inquiryForm = useForm({
+        intent: 'buy',
+        budget: '',
+        message: `I would like more information about ${listing.address}.`,
+    });
+    const viewingForm = useForm({
+        scheduled_at: '',
+    });
+
+    const requireAuth = () => {
+        if (!isAuthenticated) {
+            router.visit('/login');
+
+            return false;
+        }
+
+        return true;
+    };
+
+    const submitInquiry = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!requireAuth() || !submitInquiryUrl) {
+            return;
+        }
+
+        inquiryForm.post(submitInquiryUrl, { preserveScroll: true });
+    };
+
+    const submitViewing = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!requireAuth() || !requestViewingUrl) {
+            return;
+        }
+
+        viewingForm.post(requestViewingUrl, { preserveScroll: true });
+    };
+
     return (
-        <aside className="rounded-md bg-white p-5 shadow-[0_18px_45px_rgba(25,32,56,0.16)] lg:-mt-20 lg:mx-5 lg:relative">
+        <aside className="rounded-md bg-white p-5 shadow-[0_18px_45px_rgba(25,32,56,0.16)] lg:relative lg:mx-5 lg:-mt-20">
             <div className="flex items-center gap-3">
-                <img src={brokerImage} alt="Jonathan Sterling" className="size-14 rounded-full object-cover" />
+                <div className="flex size-14 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+                    {(listing.agent?.name ?? 'Agent').slice(0, 1)}
+                </div>
                 <div>
-                    <div className="font-semibold">Jonathan Sterling</div>
-                    <div className="text-xs text-[#697083]">Senior Broker</div>
-                    <div className="text-xs text-[#697083]">EstatePro</div>
+                    <div className="font-semibold">
+                        {listing.agent?.name ?? 'Listing Agent'}
+                    </div>
+                    <div className="text-xs text-[#697083]">
+                        {listing.agent?.email ?? 'EstatePro'}
+                    </div>
                 </div>
             </div>
-            <Button className="mt-5 h-11 w-full rounded-sm bg-blue-700 text-white hover:bg-blue-800">
-                <CalendarClock className="size-4" />
-                Schedule a Viewing
-            </Button>
-            <div className="my-5 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-wide text-[#8A8F9F]">
+            <form className="mt-5 grid gap-3" onSubmit={submitViewing}>
+                <input
+                    type="datetime-local"
+                    value={viewingForm.data.scheduled_at}
+                    onChange={(event) =>
+                        viewingForm.setData('scheduled_at', event.target.value)
+                    }
+                    className="h-11 rounded-sm border border-[#D8DCE8] px-3 text-sm outline-none focus:border-blue-700"
+                />
+                {viewingForm.errors.scheduled_at && (
+                    <div className="text-xs text-red-600">
+                        {viewingForm.errors.scheduled_at}
+                    </div>
+                )}
+                <Button
+                    className="h-11 w-full rounded-sm bg-blue-700 text-white hover:bg-blue-800"
+                    disabled={viewingForm.processing}
+                >
+                    <CalendarClock className="size-4" />
+                    Request a Viewing
+                </Button>
+            </form>
+            <div className="my-5 flex items-center gap-3 text-[0.68rem] font-bold tracking-wide text-[#8A8F9F] uppercase">
                 <span className="h-px flex-1 bg-[#E0E3EE]" />
                 Or Inquire Below
                 <span className="h-px flex-1 bg-[#E0E3EE]" />
             </div>
-            <form className="grid gap-3">
-                <Field placeholder="Full Name" />
-                <Field placeholder="Email Address" type="email" />
-                <Field placeholder="Phone Number (Optional)" type="tel" />
+            <form className="grid gap-3" onSubmit={submitInquiry}>
+                <select
+                    value={inquiryForm.data.intent}
+                    onChange={(event) =>
+                        inquiryForm.setData('intent', event.target.value)
+                    }
+                    className="h-11 rounded-sm border border-[#D8DCE8] px-3 text-sm outline-none focus:border-blue-700"
+                >
+                    <option value="buy">Buy</option>
+                    <option value="rent">Rent</option>
+                </select>
+                <Field
+                    placeholder="Budget (Optional)"
+                    type="number"
+                    value={inquiryForm.data.budget}
+                    onChange={(value) => inquiryForm.setData('budget', value)}
+                />
+                {inquiryForm.errors.budget && (
+                    <div className="text-xs text-red-600">
+                        {inquiryForm.errors.budget}
+                    </div>
+                )}
                 <textarea
                     className="min-h-28 rounded-sm border border-[#D8DCE8] px-3 py-2 text-sm outline-none focus:border-blue-700"
                     placeholder="Message"
-                    defaultValue="I would like more information about 1420 Modernist Way."
+                    value={inquiryForm.data.message}
+                    onChange={(event) =>
+                        inquiryForm.setData('message', event.target.value)
+                    }
                 />
-                <Button className="h-11 rounded-sm bg-[#151826] text-white hover:bg-[#262A3A]">
+                {inquiryForm.errors.message && (
+                    <div className="text-xs text-red-600">
+                        {inquiryForm.errors.message}
+                    </div>
+                )}
+                <Button
+                    className="h-11 rounded-sm bg-[#151826] text-white hover:bg-[#262A3A]"
+                    disabled={inquiryForm.processing}
+                >
                     <Mail className="size-4" />
                     Send Message
                 </Button>
                 <div className="flex items-center justify-center gap-2 text-xs text-[#697083]">
                     <Phone className="size-3.5" />
-                    (310) 555-0184
+                    Contact details are shared after the agent responds.
                 </div>
             </form>
         </aside>
     );
 }
 
-function Field({ placeholder, type = 'text' }: { placeholder: string; type?: string }) {
+function Field({
+    placeholder,
+    type = 'text',
+    value,
+    onChange,
+}: {
+    placeholder: string;
+    type?: string;
+    value?: string;
+    onChange?: (value: string) => void;
+}) {
     return (
         <input
             type={type}
+            value={value}
+            onChange={(event) => onChange?.(event.target.value)}
             className="h-11 rounded-sm border border-[#D8DCE8] px-3 text-sm outline-none focus:border-blue-700"
             placeholder={placeholder}
+        />
+    );
+}
+
+function GallerySlot({
+    media,
+}: {
+    media?: { id: string; url: string; type: string };
+}) {
+    if (!media) {
+        return (
+            <div className="flex h-56 w-full items-center justify-center rounded-md bg-[#E8E9ED] text-sm text-[#626778] lg:h-64">
+                No additional image
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={media.url}
+            alt="Property media"
+            className="h-56 w-full rounded-md object-cover lg:h-64"
         />
     );
 }
@@ -310,37 +522,20 @@ function HeroMetric({ icon, label }: { icon: ReactNode; label: string }) {
     );
 }
 
-function Amenity({ icon, label }: { icon: ReactNode; label: string }) {
-    return (
-        <div className="flex min-h-24 flex-col justify-between rounded-md bg-white p-4 shadow-sm">
-            <span className="text-blue-700 [&_svg]:size-5">{icon}</span>
-            <span className="text-sm font-semibold">{label}</span>
-        </div>
-    );
-}
-
-function MapPreview() {
-    return (
-        <div className="relative mt-5 h-72 overflow-hidden rounded-md bg-[#E8E9ED]">
-            <div className="absolute inset-0 bg-[linear-gradient(30deg,transparent_0_46%,rgba(255,255,255,0.82)_46%_50%,transparent_50%),linear-gradient(116deg,transparent_0_42%,rgba(255,255,255,0.7)_42%_46%,transparent_46%),repeating-linear-gradient(0deg,rgba(30,35,48,0.05)_0_1px,transparent_1px_42px),repeating-linear-gradient(90deg,rgba(30,35,48,0.05)_0_1px,transparent_1px_46px)]" />
-            <div className="absolute left-[18%] top-0 h-full w-8 rotate-12 bg-white/80" />
-            <div className="absolute left-0 top-[42%] h-7 w-full -rotate-6 bg-white/80" />
-            <div className="absolute bottom-[18%] right-0 h-6 w-[68%] rotate-6 bg-white/70" />
-            <div className="absolute left-[48%] top-[44%] flex size-12 items-center justify-center rounded-full bg-blue-700 text-white shadow-lg">
-                <Building2 className="size-5" />
-            </div>
-            <div className="absolute bottom-4 left-4 rounded-sm bg-white/90 px-3 py-2 text-xs font-semibold text-[#4F5365] shadow-sm">
-                Beverly Hills Gateway
-            </div>
-        </div>
-    );
-}
-
-function IconAction({ children, label }: { children: ReactNode; label: string }) {
+function IconAction({
+    children,
+    label,
+    onClick,
+}: {
+    children: ReactNode;
+    label: string;
+    onClick?: () => void;
+}) {
     return (
         <button
             type="button"
             aria-label={label}
+            onClick={onClick}
             className="flex size-10 items-center justify-center rounded-full bg-white/90 text-[#151826] shadow-sm hover:bg-white"
         >
             {children}

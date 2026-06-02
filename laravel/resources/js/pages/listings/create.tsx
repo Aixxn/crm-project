@@ -13,12 +13,12 @@ export default function CreateListing({ agents, owners }: CreateListingProps) {
     return (
         <>
             <Head title="Create listing" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
-                    <h1 className="text-xl font-semibold text-neutral-950">
+            <main className="min-h-full bg-[#f7f5fc] text-[#1f2330]">
+                <div className="border-b border-[#c4c8d9] bg-white px-6 py-5">
+                    <h1 className="text-2xl font-semibold tracking-tight">
                         Create listing
                     </h1>
-                    <p className="mt-1 text-sm text-neutral-600">
+                    <p className="mt-2 text-sm text-[#596071]">
                         Add the property record, owner, assignment, and launch
                         status.
                     </p>
