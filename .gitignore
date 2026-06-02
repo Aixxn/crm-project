@@ -28,7 +28,7 @@ laravel/vendor/
 laravel/storage/*.key
 laravel/storage/pail/
 laravel/public/storage/
-
+docs
 # Node dependencies and frontend build output
 node_modules/
 laravel/node_modules/
