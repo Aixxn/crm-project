@@ -43,5 +43,6 @@ laravel/resources/js/routes/
 laravel/resources/js/wayfinder/
 
 # Local MCP / agent state
+.playwright-mcp/
 laravel/.agents/
 laravel/.claude/
