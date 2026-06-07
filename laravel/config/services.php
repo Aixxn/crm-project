@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'listing_webhook' => [
+        'secret' => env('LISTING_WEBHOOK_SECRET'),
+        'signature_tolerance' => env('LISTING_WEBHOOK_SIGNATURE_TOLERANCE', 300),
+    ],
+
 ];

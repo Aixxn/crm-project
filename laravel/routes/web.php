@@ -6,8 +6,10 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\ListingWebhookController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\PortalNotificationController;
 use App\Http\Controllers\PortalSearchController;
 use App\Http\Controllers\PublicInquiryController;
 use App\Http\Controllers\PublicListingController;
@@ -23,6 +25,7 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('browse', [PublicListingController::class, 'index'])->name('public.browse');
 Route::get('properties/featured', [PublicListingController::class, 'featured'])->name('public.property.featured');
 Route::get('properties/{listing}', [PublicListingController::class, 'show'])->name('public.property.show');
+Route::post('webhooks/listings/offered', [ListingWebhookController::class, 'offered'])->name('webhooks.listings.offered');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-home', BuyerHomeController::class)->name('public.my-home');
@@ -35,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('saved-listings/{listing}', [SavedListingController::class, 'destroy'])->name('public.saved-listings.destroy');
     Route::post('recent-searches', [PortalSearchController::class, 'store'])->name('public.recent-searches.store');
     Route::delete('recent-searches/{portalSearch}', [PortalSearchController::class, 'destroy'])->name('public.recent-searches.destroy');
+    Route::patch('portal/notifications/{notification}', [PortalNotificationController::class, 'update'])->name('public.notifications.update');
 });
 
 Route::middleware(['auth', 'verified', EnsureUserHasCrmAccess::class])->group(function () {

@@ -107,9 +107,9 @@ export function money(value: string | number | null | undefined) {
         return '-';
     }
 
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-PH', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'PHP',
         maximumFractionDigits: 0,
     }).format(Number(value));
 }

@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, Building2, Heart, Search } from 'lucide-react';
+import { Building2, Heart, Search } from 'lucide-react';
+import { PublicNotificationBell } from './public-notification-bell';
 import { PublicUserMenu } from './public-user-menu';
 
 type PublicHeaderProps = {
@@ -62,7 +63,7 @@ export function PublicHeader({ active, search = false, sticky = false }: PublicH
                 <div className="flex items-center gap-6 text-[#4F5365]">
                     {auth.user && (
                         <>
-                            <Bell className="hidden size-5 md:block" />
+                            <PublicNotificationBell />
                             <Heart className="hidden size-5 md:block" />
                         </>
                     )}

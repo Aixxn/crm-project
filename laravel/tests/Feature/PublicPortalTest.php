@@ -10,10 +10,13 @@ use App\Models\Contact;
 use App\Models\Inquiry;
 use App\Models\Listing;
 use App\Models\ListingMedia;
+use App\Models\Role;
 use App\Models\SavedListing;
 use App\Models\User;
 use App\Models\Viewing;
+use App\Notifications\ListingOfferedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -178,10 +181,11 @@ class PublicPortalTest extends TestCase
         $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
         $agent = User::factory()->create();
         $listing = Listing::factory()->active()->create(['assigned_agent_id' => $agent->id]);
+        $scheduledAt = now()->addDays(2)->setTime(14, 0);
 
         $this->actingAs($buyer)
             ->post(route('public.viewing-requests.store', $listing), [
-                'scheduled_at' => now()->addDays(2)->toDateTimeString(),
+                'scheduled_at' => $scheduledAt->toDateTimeString(),
             ])
             ->assertRedirect();
 
@@ -191,6 +195,84 @@ class PublicPortalTest extends TestCase
             'agent_id' => $agent->id,
             'status' => ViewingStatus::Requested->value,
         ]);
+        $this->assertDatabaseHas('inquiries', [
+            'listing_id' => $listing->id,
+            'contact_id' => $buyerContact->id,
+            'status' => InquiryStatus::New->value,
+            'source' => 'Public Portal',
+            'intent' => 'buy',
+            'message' => 'Viewing requested for '.$scheduledAt->format('M j, Y g:i A').'.',
+        ]);
+    }
+
+    public function test_viewing_request_reuses_existing_open_inquiry_for_buyer_listing(): void
+    {
+        $buyerContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
+        $listing = Listing::factory()->active()->create();
+        $scheduledAt = now()->addDays(3)->setTime(10, 30);
+
+        Inquiry::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $buyerContact->id,
+            'status' => InquiryStatus::Contacted,
+            'source' => 'Public Portal',
+            'intent' => 'buy',
+            'message' => 'Initial buyer message.',
+        ]);
+
+        $this->actingAs($buyer)
+            ->post(route('public.viewing-requests.store', $listing), [
+                'scheduled_at' => $scheduledAt->toDateTimeString(),
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, Inquiry::query()
+            ->where('listing_id', $listing->id)
+            ->where('contact_id', $buyerContact->id)
+            ->count());
+        $this->assertDatabaseHas('inquiries', [
+            'listing_id' => $listing->id,
+            'contact_id' => $buyerContact->id,
+            'status' => InquiryStatus::Contacted->value,
+            'message' => 'Initial buyer message.'."\n\n".'Viewing requested for '.$scheduledAt->format('M j, Y g:i A').'.',
+        ]);
+        $this->assertDatabaseHas('viewings', [
+            'listing_id' => $listing->id,
+            'contact_id' => $buyerContact->id,
+            'status' => ViewingStatus::Requested->value,
+        ]);
+    }
+
+    public function test_duplicate_pending_viewing_request_for_same_time_is_blocked(): void
+    {
+        $buyerContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
+        $listing = Listing::factory()->active()->create();
+        $scheduledAt = now()->addDays(4)->setTime(11, 0);
+
+        Viewing::factory()->create([
+            'listing_id' => $listing->id,
+            'contact_id' => $buyerContact->id,
+            'status' => ViewingStatus::Requested,
+            'scheduled_at' => $scheduledAt,
+        ]);
+
+        $this->actingAs($buyer)
+            ->post(route('public.viewing-requests.store', $listing), [
+                'scheduled_at' => $scheduledAt->toDateTimeString(),
+            ])
+            ->assertSessionHasErrors('scheduled_at');
+
+        $this->assertSame(1, Viewing::query()
+            ->where('listing_id', $listing->id)
+            ->where('contact_id', $buyerContact->id)
+            ->where('scheduled_at', $scheduledAt)
+            ->count());
+        $this->assertSame(0, Inquiry::query()
+            ->where('listing_id', $listing->id)
+            ->where('contact_id', $buyerContact->id)
+            ->count());
     }
 
     public function test_my_home_and_deal_tracker_are_scoped_to_the_buyer_contact(): void
@@ -243,5 +325,145 @@ class PublicPortalTest extends TestCase
                 ->where('kpis.viewings', 1)
                 ->where('latestInquiry.listing.title', 'Visible Buyer Home')
             );
+    }
+
+    public function test_listing_offered_webhook_requires_valid_signature(): void
+    {
+        config()->set('services.listing_webhook.secret', 'test-secret');
+
+        $listing = Listing::factory()->active()->create();
+
+        $this->postJson(route('webhooks.listings.offered'), [
+            'listing_id' => $listing->id,
+        ])->assertUnauthorized();
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_listing_offered_webhook_rejects_stale_timestamp(): void
+    {
+        config()->set('services.listing_webhook.secret', 'test-secret');
+
+        $listing = Listing::factory()->active()->create();
+        $payload = ['listing_id' => $listing->id];
+
+        $this->postSignedListingWebhook($payload, now()->subMinutes(10)->timestamp)
+            ->assertUnauthorized();
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_listing_offered_webhook_rejects_non_public_listing_statuses(): void
+    {
+        config()->set('services.listing_webhook.secret', 'test-secret');
+
+        $listing = Listing::factory()->create(['status' => ListingStatus::Draft]);
+
+        $this->postSignedListingWebhook(['listing_id' => $listing->id])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_listing_offered_webhook_notifies_verified_buyer_portal_users_only_once(): void
+    {
+        config()->set('services.listing_webhook.secret', 'test-secret');
+
+        $buyerContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
+        $listing = Listing::factory()->active()->create(['address' => '42 Palm Avenue']);
+
+        $payload = [
+            'listing_id' => $listing->id,
+            'event_id' => 'evt-listing-offered-1',
+        ];
+
+        $this->postSignedListingWebhook($payload)
+            ->assertOk()
+            ->assertJson(['notified' => 1]);
+
+        $this->postSignedListingWebhook($payload)
+            ->assertOk()
+            ->assertJson(['notified' => 0]);
+
+        $this->assertSame(1, $buyer->notifications()->count());
+
+        $notification = $buyer->notifications()->firstOrFail();
+
+        $this->assertSame(ListingOfferedNotification::class, $notification->type);
+        $this->assertSame('evt-listing-offered-1', $notification->data['event_id']);
+        $this->assertSame('42 Palm Avenue', $notification->data['title']);
+        $this->assertSame(route('public.property.show', $listing, false), $notification->data['href']);
+    }
+
+    public function test_listing_offered_webhook_does_not_notify_admin_or_agent_users(): void
+    {
+        config()->set('services.listing_webhook.secret', 'test-secret');
+
+        $adminContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $agentContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $admin = User::factory()->create(['contact_id' => $adminContact->id]);
+        $agent = User::factory()->create(['contact_id' => $agentContact->id]);
+        $listing = Listing::factory()->active()->create();
+
+        $admin->assignRole(Role::factory()->create(['key' => 'admin']));
+        $agent->assignRole(Role::factory()->create(['key' => 'agent']));
+
+        $this->postSignedListingWebhook(['listing_id' => $listing->id])
+            ->assertOk()
+            ->assertJson(['notified' => 0]);
+
+        $this->assertSame(0, $admin->notifications()->count());
+        $this->assertSame(0, $agent->notifications()->count());
+    }
+
+    public function test_public_header_receives_notification_shared_props(): void
+    {
+        $buyerContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
+        $listing = Listing::factory()->active()->create(['address' => 'Shared Prop Home']);
+
+        $buyer->notify(new ListingOfferedNotification($listing, 'shared-prop-event'));
+
+        $this->actingAs($buyer)
+            ->get(route('public.browse'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('notifications.unreadCount', 1)
+                ->where('notifications.recent.0.title', 'Shared Prop Home')
+                ->where('notifications.recent.0.href', route('public.property.show', $listing, false))
+            );
+    }
+
+    public function test_buyer_can_mark_listing_notification_as_read(): void
+    {
+        $buyerContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
+        $listing = Listing::factory()->active()->create();
+
+        $buyer->notify(new ListingOfferedNotification($listing, 'mark-read-event'));
+
+        $notification = $buyer->notifications()->firstOrFail();
+
+        $this->actingAs($buyer)
+            ->patch(route('public.notifications.update', $notification))
+            ->assertRedirect();
+
+        $this->assertSame(0, $buyer->unreadNotifications()->count());
+    }
+
+    /**
+     * @param  array<string, string>  $payload
+     */
+    private function postSignedListingWebhook(array $payload, ?int $timestamp = null): TestResponse
+    {
+        $timestamp ??= now()->timestamp;
+        $encodedPayload = json_encode($payload, JSON_THROW_ON_ERROR);
+        $signature = hash_hmac('sha256', $timestamp.'.'.$encodedPayload, 'test-secret');
+
+        return $this->withHeaders([
+            'X-Webhook-Timestamp' => (string) $timestamp,
+            'X-Webhook-Signature' => 'sha256='.$signature,
+        ])->postJson(route('webhooks.listings.offered'), $payload);
     }
 }

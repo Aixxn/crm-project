@@ -2,11 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     CalendarClock,
-    CircleDollarSign,
     ContactRound,
     Mail,
     MessageSquareText,
     Pencil,
+    PhilippinePeso,
     Phone,
     Trash2,
 } from 'lucide-react';
@@ -308,7 +308,7 @@ function Offers({ rows }: { rows: RelatedOffer[] }) {
     return (
         <ActivityTable
             empty="No offers linked to this contact."
-            icon={<CircleDollarSign />}
+            icon={<PhilippinePeso />}
             rows={rows.map((offer) => ({
                 id: offer.id,
                 primary: offer.listing?.address ?? 'Unlinked listing',
@@ -459,9 +459,9 @@ function contactName(contact: {
 }
 
 function money(value: string | number) {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-PH', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'PHP',
         maximumFractionDigits: 0,
     }).format(Number(value));
 }

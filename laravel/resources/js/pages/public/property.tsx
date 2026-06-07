@@ -2,7 +2,6 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     Bath,
     BedDouble,
-    Bell,
     Building2,
     CalendarClock,
     Heart,
@@ -12,9 +11,11 @@ import {
     Search,
     Share2,
 } from 'lucide-react';
+import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import type { User } from '@/types';
+import { PublicNotificationBell } from './_components/public-notification-bell';
 import { PublicUserMenu } from './_components/public-user-menu';
 
 type PublicListingDetail = {
@@ -306,7 +307,7 @@ function PropertyHeader({ user }: { user?: User | null }) {
                 <div className="flex shrink-0 items-center gap-5 text-[#4F5365]">
                     {user && (
                         <>
-                            <Bell className="hidden size-5 md:block" />
+                            <PublicNotificationBell />
                             <Heart className="hidden size-5 md:block" />
                         </>
                     )}
@@ -343,8 +344,11 @@ function ContactCard({
         message: `I would like more information about ${listing.address}.`,
     });
     const viewingForm = useForm({
+        preferred_date: '',
+        preferred_time: '',
         scheduled_at: '',
     });
+    const [viewingRequested, setViewingRequested] = useState(false);
 
     const requireAuth = () => {
         if (!isAuthenticated) {
@@ -373,8 +377,38 @@ function ContactCard({
             return;
         }
 
-        viewingForm.post(requestViewingUrl, { preserveScroll: true });
+        const scheduledAt =
+            viewingForm.data.preferred_date && viewingForm.data.preferred_time
+                ? `${viewingForm.data.preferred_date}T${viewingForm.data.preferred_time}`
+                : '';
+
+        viewingForm.transform((data) => ({
+            scheduled_at: scheduledAt || data.scheduled_at,
+        }));
+
+        viewingForm.post(requestViewingUrl, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setViewingRequested(true);
+                viewingForm.reset();
+                viewingForm.transform((data) => data);
+            },
+            onError: () => viewingForm.transform((data) => data),
+        });
     };
+
+    const selectedViewingLabel =
+        viewingForm.data.preferred_date && viewingForm.data.preferred_time
+            ? new Date(
+                  `${viewingForm.data.preferred_date}T${viewingForm.data.preferred_time}`,
+              ).toLocaleString([], {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+              })
+            : null;
 
     return (
         <aside className="rounded-md bg-white p-5 shadow-[0_18px_45px_rgba(25,32,56,0.16)] lg:relative lg:mx-5 lg:-mt-20">
@@ -391,28 +425,78 @@ function ContactCard({
                     </div>
                 </div>
             </div>
-            <form className="mt-5 grid gap-3" onSubmit={submitViewing}>
-                <input
-                    type="datetime-local"
-                    value={viewingForm.data.scheduled_at}
-                    onChange={(event) =>
-                        viewingForm.setData('scheduled_at', event.target.value)
-                    }
-                    className="h-11 rounded-sm border border-[#D8DCE8] px-3 text-sm outline-none focus:border-blue-700"
-                />
-                {viewingForm.errors.scheduled_at && (
-                    <div className="text-xs text-red-600">
-                        {viewingForm.errors.scheduled_at}
+            {viewingRequested ? (
+                <div className="mt-5 rounded-sm border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-blue-800">
+                        <CalendarClock className="size-4" />
+                        Viewing request sent
                     </div>
-                )}
-                <Button
-                    className="h-11 w-full rounded-sm bg-blue-700 text-white hover:bg-blue-800"
-                    disabled={viewingForm.processing}
-                >
-                    <CalendarClock className="size-4" />
-                    Request a Viewing
-                </Button>
-            </form>
+                    <p className="mt-2 text-sm leading-6 text-blue-900/75">
+                        The listing agent has received your preferred viewing
+                        time and will confirm availability.
+                    </p>
+                    <Button
+                        type="button"
+                        className="mt-4 h-10 w-full rounded-sm bg-blue-700 text-white hover:bg-blue-800"
+                        onClick={() => setViewingRequested(false)}
+                    >
+                        Request another time
+                    </Button>
+                </div>
+            ) : (
+                <form className="mt-5 grid gap-3" onSubmit={submitViewing}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="grid gap-1.5 text-xs font-semibold text-[#5F6373]">
+                            Preferred date
+                            <input
+                                type="date"
+                                value={viewingForm.data.preferred_date}
+                                onChange={(event) =>
+                                    viewingForm.setData(
+                                        'preferred_date',
+                                        event.target.value,
+                                    )
+                                }
+                                className="h-11 rounded-sm border border-[#D8DCE8] px-3 text-sm font-normal text-[#151826] outline-none focus:border-blue-700"
+                            />
+                        </label>
+                        <label className="grid gap-1.5 text-xs font-semibold text-[#5F6373]">
+                            Preferred time
+                            <input
+                                type="time"
+                                value={viewingForm.data.preferred_time}
+                                onChange={(event) =>
+                                    viewingForm.setData(
+                                        'preferred_time',
+                                        event.target.value,
+                                    )
+                                }
+                                className="h-11 rounded-sm border border-[#D8DCE8] px-3 text-sm font-normal text-[#151826] outline-none focus:border-blue-700"
+                            />
+                        </label>
+                    </div>
+                    {selectedViewingLabel && (
+                        <div className="rounded-sm bg-[#F0F1FA] px-3 py-2 text-sm text-[#4F5365]">
+                            Requested for{' '}
+                            <span className="font-semibold text-[#151826]">
+                                {selectedViewingLabel}
+                            </span>
+                        </div>
+                    )}
+                    {viewingForm.errors.scheduled_at && (
+                        <div className="text-xs text-red-600">
+                            {viewingForm.errors.scheduled_at}
+                        </div>
+                    )}
+                    <Button
+                        className="h-11 w-full rounded-sm bg-blue-700 text-white hover:bg-blue-800"
+                        disabled={viewingForm.processing}
+                    >
+                        <CalendarClock className="size-4" />
+                        Request a Viewing
+                    </Button>
+                </form>
+            )}
             <div className="my-5 flex items-center gap-3 text-[0.68rem] font-bold tracking-wide text-[#8A8F9F] uppercase">
                 <span className="h-px flex-1 bg-[#E0E3EE]" />
                 Or Inquire Below

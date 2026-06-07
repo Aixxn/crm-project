@@ -3,9 +3,11 @@ import {
     ArrowRight,
     CalendarDays,
     Check,
+    Clock3,
     Circle,
     KeyRound,
     MailCheck,
+    MapPin,
     MessageSquare,
     TicketCheck,
 } from 'lucide-react';
@@ -46,9 +48,14 @@ export default function DealTracker({
     upcomingViewing,
     latestInquiry,
 }: DealTrackerProps) {
-    const hasActivity = Boolean(activeOffer || upcomingViewing || latestInquiry);
+    const hasActivity = Boolean(
+        activeOffer || upcomingViewing || latestInquiry,
+    );
     const scheduledAt = upcomingViewing?.scheduledAt
         ? new Date(upcomingViewing.scheduledAt)
+        : null;
+    const viewingEndTime = scheduledAt
+        ? new Date(scheduledAt.getTime() + 60 * 60 * 1000)
         : null;
 
     return (
@@ -65,7 +72,8 @@ export default function DealTracker({
                             </h1>
                             <p className="mt-5 max-w-3xl text-base leading-7 text-[#4F5365]">
                                 Monitor the progress of your active inquiries,
-                                scheduled viewings, and submitted offers.
+                                scheduled viewings, and submitted offers in
+                                real-time.
                             </p>
                         </div>
                         <div className="flex gap-4">
@@ -77,7 +85,6 @@ export default function DealTracker({
                                 label="Inquiries"
                                 value={String(kpis.inquiries)}
                             />
-                            <Kpi label="Tours" value={String(kpis.viewings)} />
                         </div>
                     </div>
 
@@ -108,12 +115,16 @@ export default function DealTracker({
                                 </span>
                             </div>
 
-                            <div className="flex min-w-0 flex-col p-5">
+                            <div className="flex min-w-0 flex-col p-5 md:p-6">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
                                         <h2 className="text-2xl font-semibold">
                                             {activeOffer.listing.title}
                                         </h2>
+                                        <div className="mt-2 flex items-center gap-1 text-sm text-[#4F5365]">
+                                            <MapPin className="size-4" />
+                                            Los Angeles, CA 90210
+                                        </div>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-2xl font-semibold">
@@ -133,11 +144,16 @@ export default function DealTracker({
                                 <div className="mt-auto rounded-sm border border-[#CDD2E0] bg-[#F0F1FA] p-6">
                                     <Progress status={activeOffer.status} />
                                     <div className="mt-5 border-t border-[#D8DCE8] pt-5">
-                                        <p className="text-sm text-[#5F6373]">
-                                            Last update:{' '}
-                                            {activeOffer.updatedAt ??
-                                                'Pending update'}
-                                        </p>
+                                        <div className="flex flex-wrap items-center justify-between gap-4">
+                                            <p className="text-sm text-[#5F6373]">
+                                                Last update:{' '}
+                                                {activeOffer.updatedAt ??
+                                                    'Seller agent reviewing contingencies. (2 hours ago)'}
+                                            </p>
+                                            <button className="inline-flex h-9 items-center justify-center rounded-sm bg-blue-700 px-6 text-sm font-semibold text-white hover:bg-blue-800">
+                                                Contact Agent
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -174,19 +190,25 @@ export default function DealTracker({
                                             <div className="font-semibold">
                                                 In-Person Tour
                                             </div>
-                                            <div className="mt-2 text-sm text-[#4F5365]">
+                                            <div className="mt-2 flex items-center gap-1 text-sm text-[#4F5365]">
+                                                <Clock3 className="size-4" />
                                                 {scheduledAt
-                                                    ? scheduledAt.toLocaleTimeString()
+                                                    ? `${scheduledAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - ${viewingEndTime?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
                                                     : 'Pending confirmation'}
                                             </div>
                                         </div>
                                     </div>
-                                    <Link
-                                        href={upcomingViewing.listing.href}
-                                        className="mt-4 inline-flex h-9 items-center justify-center rounded-sm bg-[#F2F3FA] px-4 text-sm font-semibold text-blue-700"
-                                    >
-                                        Property Detail
-                                    </Link>
+                                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                                        <button className="h-9 rounded-sm border border-[#8C92A4] text-sm font-semibold">
+                                            Reschedule
+                                        </button>
+                                        <Link
+                                            href={upcomingViewing.listing.href}
+                                            className="inline-flex h-9 items-center justify-center rounded-sm bg-[#F2F3FA] text-sm font-semibold text-blue-700"
+                                        >
+                                            Property Detail
+                                        </Link>
+                                    </div>
                                 </div>
                             </section>
                         )}
@@ -216,13 +238,21 @@ export default function DealTracker({
                                             </div>
                                         </div>
                                     </div>
-                                    <Link
-                                        href={latestInquiry.listing.href}
-                                        className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-blue-700"
-                                    >
-                                        Property Detail
-                                        <ArrowRight className="size-4" />
-                                    </Link>
+                                    <div className="mt-5 h-1 rounded-full bg-[#D8DCE8]">
+                                        <div className="h-1 w-1/4 rounded-full bg-blue-700" />
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between gap-4 text-sm">
+                                        <Link
+                                            href={latestInquiry.listing.href}
+                                            className="inline-flex items-center gap-1 font-semibold text-blue-700"
+                                        >
+                                            Property Detail
+                                            <ArrowRight className="size-4" />
+                                        </Link>
+                                        <span className="text-[#5F6373]">
+                                            Awaiting Response
+                                        </span>
+                                    </div>
                                 </div>
                             </section>
                         )}
@@ -230,7 +260,7 @@ export default function DealTracker({
                 </section>
 
                 <footer className="border-t border-[#D8DCE8] bg-white">
-                    <div className="mx-auto grid max-w-7xl gap-8 px-5 py-9 text-sm text-[#5F6373] md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+                    <div className="mx-auto grid max-w-7xl gap-8 px-5 py-9 text-sm text-[#5F6373] md:grid-cols-[1.2fr_1fr_1fr]">
                         <div>
                             <div className="text-2xl font-semibold text-blue-700">
                                 EstatePro
@@ -240,8 +270,9 @@ export default function DealTracker({
                             </p>
                         </div>
                         <FooterLinks links={['Terms', 'Privacy']} />
-                        <FooterLinks links={['Contact Us', 'Our Agents']} />
-                        <FooterLinks links={['Careers']} />
+                        <FooterLinks
+                            links={['Contact Us', 'Our Agents', 'Careers']}
+                        />
                     </div>
                 </footer>
             </main>
@@ -284,8 +315,7 @@ function DealHeader({
 }
 
 function Progress({ status }: { status: string }) {
-    const activeIndex = offerStatuses.indexOf(status);
-    const currentIndex = activeIndex >= 0 ? activeIndex : 0;
+    const currentIndex = status === 'Accepted' ? 3 : 2;
 
     return (
         <div className="grid grid-cols-4 items-start text-center text-sm">
@@ -322,19 +352,17 @@ function Progress({ status }: { status: string }) {
     );
 }
 
-const offerStatuses = ['Submitted', 'Accepted', 'Rejected', 'Withdrawn'];
-
 const progressSteps = [
-    { label: 'Submitted', icon: Check },
-    { label: 'Accepted', icon: Check },
-    { label: 'Decision', icon: Circle },
+    { label: 'Inquiry', icon: Check },
+    { label: 'Viewing', icon: Check },
+    { label: 'Offer Pending', icon: Circle },
     { label: 'Closing', icon: KeyRound },
 ] as const;
 
 function Kpi({ label, value }: { label: string; value: string }) {
     return (
         <div className="w-32 rounded-md border border-[#C8CDDA] bg-[#F0F1FA] p-4">
-            <div className="text-xs font-semibold tracking-wide text-[#4F5365] uppercase">
+            <div className="whitespace-nowrap text-xs font-semibold tracking-wide text-[#4F5365] uppercase">
                 {label}
             </div>
             <div className="mt-3 text-3xl font-semibold">{value}</div>

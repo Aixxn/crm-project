@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -41,7 +43,41 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'notifications' => $this->notificationProps($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * @return array{unreadCount: int, recent: array<int, array{id: string, title: string|null, message: string|null, href: string|null, status: string|null, price: float|null, createdAt: string|null}>}
+     */
+    private function notificationProps(Request $request): array
+    {
+        $user = $request->user();
+
+        if (! $user || ! Schema::hasTable('notifications')) {
+            return [
+                'unreadCount' => 0,
+                'recent' => [],
+            ];
+        }
+
+        return [
+            'unreadCount' => $user->unreadNotifications()->count(),
+            'recent' => $user->unreadNotifications()
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn (DatabaseNotification $notification): array => [
+                    'id' => $notification->id,
+                    'title' => $notification->data['title'] ?? null,
+                    'message' => $notification->data['message'] ?? null,
+                    'href' => $notification->data['href'] ?? null,
+                    'status' => $notification->data['status'] ?? null,
+                    'price' => $notification->data['price'] ?? null,
+                    'createdAt' => $notification->created_at?->diffForHumans(),
+                ])
+                ->all(),
         ];
     }
 }

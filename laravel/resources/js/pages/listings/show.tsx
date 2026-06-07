@@ -4,11 +4,11 @@ import {
     BedDouble,
     Building2,
     CalendarClock,
-    DollarSign,
     FileText,
     ImageIcon,
     Mail,
     Pencil,
+    PhilippinePeso,
     Ruler,
     Trash2,
     Waves,
@@ -308,7 +308,7 @@ function DescriptionCard({ listing }: { listing: ListingDetail }) {
                 <Feature icon={<Building2 />} label="Property Type">
                     {listing.property_type || 'Unspecified'}
                 </Feature>
-                <Feature icon={<DollarSign />} label="Price / SqFt">
+                <Feature icon={<PhilippinePeso />} label="Price / SqFt">
                     {pricePerSqft(listing)}
                 </Feature>
                 <Feature icon={<Waves />} label="Workflow">
