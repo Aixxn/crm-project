@@ -267,7 +267,7 @@ function PropertyCard({
 }) {
     const image =
         property.image ??
-        'https://images.unsplash.com/photo-1600607687644-c7171b42498b?auto=format&fit=crop&w=900&q=85';
+        'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=900&q=85';
     const meta = [
         property.bedrooms ? `${property.bedrooms} Beds` : 'Beds TBD',
         property.bathrooms ? `${property.bathrooms} Baths` : 'Baths TBD',

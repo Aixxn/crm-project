@@ -23,7 +23,7 @@ const heroImage =
 const poolImage =
     'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=85';
 const homeImage =
-    'https://images.unsplash.com/photo-1600607687644-c7171b42498b?auto=format&fit=crop&w=900&q=85';
+    'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=900&q=85';
 
 export default function Welcome() {
     return (
@@ -40,16 +40,16 @@ export default function Welcome() {
                     />
                     <div className="absolute inset-0 bg-[#101826]/58" />
                     <div className="relative z-10 mx-auto flex min-h-[31rem] max-w-5xl flex-col items-center justify-center px-5 py-16 text-center text-white">
-                        <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-100">
+                        <p className="text-xs font-bold tracking-[0.22em] text-blue-100 uppercase">
                             Data-driven brokerage
                         </p>
-                        <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-tight md:text-6xl">
+                        <h1 className="mt-6 max-w-4xl text-4xl leading-tight font-semibold md:text-6xl">
                             Discover the true market value of your property.
                         </h1>
                         <p className="mt-6 max-w-3xl text-base leading-7 text-white/72">
-                            Leverage our institutional-grade pricing algorithm and
-                            hyper-local market intelligence to position your asset
-                            for maximum return.
+                            Leverage our institutional-grade pricing algorithm
+                            and hyper-local market intelligence to position your
+                            asset for maximum return.
                         </p>
                         <div className="mt-9 grid w-full max-w-3xl gap-3 rounded-md bg-white p-3 shadow-xl md:grid-cols-[1fr_auto]">
                             <label className="flex items-center gap-3 px-3 text-[#808497]">
@@ -59,7 +59,7 @@ export default function Welcome() {
                                     placeholder="Enter your property address"
                                 />
                             </label>
-                            <Button className="h-11 px-8 text-xs font-bold uppercase tracking-wide">
+                            <Button className="h-11 px-8 text-xs font-bold tracking-wide uppercase">
                                 Get estimate
                                 <ArrowRight />
                             </Button>
@@ -74,9 +74,9 @@ export default function Welcome() {
                                 A Precision Approach to Selling
                             </h2>
                             <p className="mt-5 text-sm leading-6 text-[#6E7284]">
-                                We engineer the sales process to minimize days on
-                                market while maximizing final yield. Every step is
-                                executed with exacting standards.
+                                We engineer the sales process to minimize days
+                                on market while maximizing final yield. Every
+                                step is executed with exacting standards.
                             </p>
                         </div>
                         <div className="mt-14 grid gap-10 md:grid-cols-4">
@@ -108,8 +108,8 @@ export default function Welcome() {
                                     Recent Market Successes
                                 </h2>
                                 <p className="mt-4 text-sm text-[#6E7284]">
-                                    A selection of recently transacted assets managed
-                                    by EstatePro.
+                                    A selection of recently transacted assets
+                                    managed by EstatePro.
                                 </p>
                             </div>
                             <Button asChild variant="outline" className="px-8">
@@ -128,21 +128,30 @@ export default function Welcome() {
                                         alt=""
                                         className="absolute inset-0 size-full object-cover"
                                     />
-                                    <span className="absolute left-5 top-5 bg-[#111722] px-4 py-2 text-xs font-bold uppercase tracking-wide text-white">
+                                    <span className="absolute top-5 left-5 bg-[#111722] px-4 py-2 text-xs font-bold tracking-wide text-white uppercase">
                                         Closed - 14 days
                                     </span>
                                 </div>
                                 <div className="flex min-h-80 flex-col p-7">
                                     <div className="text-3xl font-semibold">
-                                        $4,250,000
+                                        ₱ 242,000,000
                                     </div>
                                     <div className="mt-3 text-sm text-[#6E7284]">
-                                        1420 Modernist Drive, Beverly Hills
+                                        Palm Avenue, Forbes Park, Makati City
                                     </div>
                                     <div className="mt-8 flex flex-wrap gap-8 border-y border-[#D8DCE8] py-5 text-sm text-[#525769]">
-                                        <Metric icon={<BedDouble />} label="5 Beds" />
-                                        <Metric icon={<Warehouse />} label="6 Baths" />
-                                        <Metric icon={<Ruler />} label="6,200 SqFt" />
+                                        <Metric
+                                            icon={<BedDouble />}
+                                            label="5 Beds"
+                                        />
+                                        <Metric
+                                            icon={<Warehouse />}
+                                            label="6 Baths"
+                                        />
+                                        <Metric
+                                            icon={<Ruler />}
+                                            label="576 SqM"
+                                        />
                                     </div>
                                     <div className="mt-auto flex items-center justify-between text-sm">
                                         <span className="font-semibold text-blue-700">
@@ -165,21 +174,30 @@ export default function Welcome() {
                                         alt=""
                                         className="size-full object-cover"
                                     />
-                                    <span className="absolute left-5 top-5 bg-[#111722] px-4 py-2 text-xs font-bold uppercase tracking-wide text-white">
+                                    <span className="absolute top-5 left-5 bg-[#111722] px-4 py-2 text-xs font-bold tracking-wide text-white uppercase">
                                         Closed
                                     </span>
                                 </div>
                                 <div className="p-7">
                                     <div className="text-2xl font-semibold">
-                                        $1,850,000
+                                        ₱ 104,000,000
                                     </div>
                                     <div className="mt-3 text-sm text-[#6E7284]">
-                                        88 Valley Ridge, Calabasas
+                                        Maria Luisa Estate Park, Cebu City
                                     </div>
                                     <div className="mt-16 flex gap-5 text-sm text-[#525769]">
-                                        <Metric icon={<BedDouble />} label="4" />
-                                        <Metric icon={<Warehouse />} label="3.5" />
-                                        <Metric icon={<Ruler />} label="3,800" />
+                                        <Metric
+                                            icon={<BedDouble />}
+                                            label="4"
+                                        />
+                                        <Metric
+                                            icon={<Warehouse />}
+                                            label="3.5"
+                                        />
+                                        <Metric
+                                            icon={<Ruler />}
+                                            label="353 SqM"
+                                        />
                                     </div>
                                 </div>
                             </Link>
@@ -190,22 +208,22 @@ export default function Welcome() {
                 <section className="bg-[#F8F7FF] px-5 py-24">
                     <div className="mx-auto grid max-w-7xl overflow-hidden rounded-lg border border-[#CDD3E4] bg-white lg:grid-cols-[0.72fr_1fr]">
                         <aside className="bg-[#171B26] p-10 text-white md:p-12">
-                            <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">
+                            <p className="text-xs font-bold tracking-[0.22em] text-blue-200 uppercase">
                                 Private consultation
                             </p>
                             <h2 className="mt-7 text-3xl font-semibold">
                                 Ready to list your asset?
                             </h2>
                             <p className="mt-8 max-w-sm text-sm leading-7 text-white/68">
-                                Connect with one of our senior brokerage partners
-                                for a confidential, no-obligation valuation and
-                                strategic market assessment.
+                                Connect with one of our senior brokerage
+                                partners for a confidential, no-obligation
+                                valuation and strategic market assessment.
                             </p>
                             <div className="mt-10 space-y-7">
                                 <ContactLine
                                     icon={<Phone />}
                                     label="Direct line"
-                                    value="+1 (800) 555-0199"
+                                    value="+63 2 8555 0199"
                                 />
                                 <ContactLine
                                     icon={<Mail />}
@@ -219,16 +237,19 @@ export default function Welcome() {
                             <Field label="Last name" placeholder="Doe" />
                             <Field
                                 label="Property address"
-                                placeholder="123 Main St, City, State"
+                                placeholder="123 Palm Avenue, Makati City"
                                 wide
                             />
                             <Field
                                 label="Email address"
                                 placeholder="john@example.com"
                             />
-                            <Field label="Phone number" placeholder="(555) 000-0000" />
+                            <Field
+                                label="Phone number"
+                                placeholder="+63 917 000 0000"
+                            />
                             <div className="md:col-span-2">
-                                <label className="text-xs font-bold uppercase tracking-wide text-[#525769]">
+                                <label className="text-xs font-bold tracking-wide text-[#525769] uppercase">
                                     Additional details
                                 </label>
                                 <textarea
@@ -236,7 +257,7 @@ export default function Welcome() {
                                     placeholder="Briefly describe your timeline and goals..."
                                 />
                             </div>
-                            <Button className="h-12 text-xs font-bold uppercase tracking-wide md:col-span-2">
+                            <Button className="h-12 text-xs font-bold tracking-wide uppercase md:col-span-2">
                                 Request assessment
                             </Button>
                         </form>
@@ -254,14 +275,21 @@ export default function Welcome() {
                                 EstatePro
                             </Link>
                             <p className="mt-6 max-w-xs text-sm leading-6 text-[#525769]">
-                                Institutional-grade real estate brokerage delivering
-                                precision execution for high-value assets.
+                                Institutional-grade real estate brokerage
+                                delivering precision execution for high-value
+                                assets.
                             </p>
                         </div>
-                        <FooterGroup title="Company" links={['Our Agents', 'Careers', 'Contact Us']} />
-                        <FooterGroup title="Legal" links={['Terms', 'Privacy']} />
+                        <FooterGroup
+                            title="Company"
+                            links={['Our Agents', 'Careers', 'Contact Us']}
+                        />
+                        <FooterGroup
+                            title="Legal"
+                            links={['Terms', 'Privacy']}
+                        />
                         <div>
-                            <h3 className="text-xs font-bold uppercase tracking-wide text-[#525769]">
+                            <h3 className="text-xs font-bold tracking-wide text-[#525769] uppercase">
                                 Connect
                             </h3>
                             <div className="mt-6 flex gap-5 text-[#525769]">
@@ -328,7 +356,7 @@ function ContactLine({
                 {icon}
             </span>
             <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-white/48">
+                <div className="text-xs font-bold tracking-wide text-white/48 uppercase">
                     {label}
                 </div>
                 <div className="mt-1 text-lg font-semibold">{value}</div>
@@ -348,7 +376,7 @@ function Field({
 }) {
     return (
         <div className={wide ? 'md:col-span-2' : ''}>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#525769]">
+            <label className="text-xs font-bold tracking-wide text-[#525769] uppercase">
                 {label}
             </label>
             <input
@@ -362,7 +390,7 @@ function Field({
 function FooterGroup({ title, links }: { title: string; links: string[] }) {
     return (
         <div>
-            <h3 className="text-xs font-bold uppercase tracking-wide text-[#525769]">
+            <h3 className="text-xs font-bold tracking-wide text-[#525769] uppercase">
                 {title}
             </h3>
             <div className="mt-6 grid gap-4 text-sm text-[#6E7284]">

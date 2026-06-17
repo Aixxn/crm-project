@@ -33,6 +33,32 @@ class PublicPortalTest extends TestCase
             );
     }
 
+    public function test_public_landing_page_uses_philippine_market_examples_and_valid_static_images(): void
+    {
+        $welcomePage = file_get_contents(resource_path('js/pages/welcome.tsx'));
+
+        $this->assertIsString($welcomePage);
+        $this->assertStringContainsString('₱ 242,000,000', $welcomePage);
+        $this->assertStringContainsString('Forbes Park, Makati City', $welcomePage);
+        $this->assertStringContainsString('₱ 104,000,000', $welcomePage);
+        $this->assertStringContainsString('Maria Luisa Estate Park, Cebu City', $welcomePage);
+        $this->assertStringNotContainsString('photo-1600607687644-c7171b42498b', $welcomePage);
+        $this->assertStringNotContainsString('Beverly Hills', $welcomePage);
+        $this->assertStringNotContainsString('Calabasas', $welcomePage);
+    }
+
+    public function test_buyer_portal_demo_seeder_does_not_use_dead_primary_listing_image(): void
+    {
+        $this->seed();
+
+        $this->get(route('public.browse'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('listings.0.image', fn (?string $image) => $image !== null
+                    && ! str_contains($image, 'photo-1600607687644-c7171b42498b'))
+            );
+    }
+
     public function test_browse_shows_only_public_listing_statuses(): void
     {
         $activeListing = Listing::factory()->active()->create(['address' => '100 Market Street']);
