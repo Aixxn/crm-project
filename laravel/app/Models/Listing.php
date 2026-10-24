@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ListingStatus;
 use Database\Factories\ListingFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,9 +34,20 @@ class Listing extends Model
     {
         return [
             'status' => ListingStatus::class,
+            'closed_at' => 'immutable_datetime',
             'price' => 'decimal:2',
             'bathrooms' => 'decimal:1',
         ];
+    }
+
+    public function scopePublished(Builder $query): void
+    {
+        $query->whereIn('status', [ListingStatus::Active, ListingStatus::UnderOffer]);
+    }
+
+    public function isPublished(): bool
+    {
+        return ! $this->trashed() && in_array($this->status, [ListingStatus::Active, ListingStatus::UnderOffer], true);
     }
 
     public function assignedAgent(): BelongsTo

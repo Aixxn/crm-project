@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Offers;
 
-use App\Enums\OfferStatus;
+use App\Models\Contact;
 use App\Models\Listing;
 use App\Models\Offer;
 use App\Services\OwnershipScope;
@@ -27,8 +27,8 @@ class StoreOfferRequest extends FormRequest
         return [
             'listing_id' => ['required', 'uuid', 'exists:listings,id'],
             'contact_id' => ['required', 'uuid', 'exists:contacts,id'],
-            'status' => ['required', Rule::enum(OfferStatus::class)],
-            'amount' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'status' => ['required', Rule::in(['Submitted'])],
+            'amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2', 'max:9999999999.99'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -36,9 +36,17 @@ class StoreOfferRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
-            $listing = Listing::query()->find($this->input('listing_id'));
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
 
-            if ($listing && ! app(OwnershipScope::class)->canAccess($this->user(), $listing, 'offer.create')) {
+            $listing = Listing::query()->find($this->input('listing_id'));
+            $contact = Contact::query()->find($this->input('contact_id'));
+            if (! $contact || ! app(OwnershipScope::class)->canAccess($this->user(), $contact, 'contact.read')) {
+                $validator->errors()->add('contact_id', 'The selected contact is not accessible.');
+            }
+
+            if (! $listing || ! app(OwnershipScope::class)->canAccess($this->user(), $listing, 'offer.create')) {
                 $validator->errors()->add('listing_id', 'You may only create offers for assigned listings.');
             }
         });

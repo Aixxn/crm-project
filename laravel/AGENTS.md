@@ -1,3 +1,9 @@
+# Project-specific foundation
+
+Read `../AGENTS.md`, `../CONTEXT.md`, `../docs/architecture.md`, and applicable `../docs/adr/` decisions before application changes. For UI work, also read `../docs/design-system.md`. The foundation roadmap separates intended rules from the implemented baseline; do not assume the documented runtime fixes already exist.
+
+Keep the managed Laravel Boost guidance below intact. Apply the root project's access, workflow, design-system and verification rules alongside it.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

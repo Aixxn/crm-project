@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ListingStatus;
 use App\Models\Inquiry;
 use App\Models\Listing;
 use App\Models\Offer;
@@ -18,27 +17,27 @@ class BuyerDealTrackerController extends Controller
 
     public function __invoke(Request $request): Response
     {
-        $contact = $this->buyerPortalScope->ensureContact($request->user());
+        $contact = $this->buyerPortalScope->contact($request->user());
 
         $offers = $contact->offers()
             ->with(['listing.media' => fn ($query) => $query->orderBy('sort_order')])
             ->latest()
             ->get()
-            ->filter(fn (Offer $offer) => $offer->listing && $this->isPublicListing($offer->listing))
+            ->filter(fn (Offer $offer) => $offer->listing && $offer->listing->isPublished())
             ->values();
 
         $viewings = $contact->viewings()
             ->with(['listing.media' => fn ($query) => $query->orderBy('sort_order')])
             ->latest('scheduled_at')
             ->get()
-            ->filter(fn (Viewing $viewing) => $viewing->listing && $this->isPublicListing($viewing->listing))
+            ->filter(fn (Viewing $viewing) => $viewing->listing && $viewing->listing->isPublished())
             ->values();
 
         $inquiries = $contact->inquiries()
             ->with(['listing.media' => fn ($query) => $query->orderBy('sort_order')])
             ->latest()
             ->get()
-            ->filter(fn (Inquiry $inquiry) => $inquiry->listing && $this->isPublicListing($inquiry->listing))
+            ->filter(fn (Inquiry $inquiry) => $inquiry->listing && $inquiry->listing->isPublished())
             ->values();
 
         return Inertia::render('public/deal-tracker', [
@@ -62,7 +61,7 @@ class BuyerDealTrackerController extends Controller
             return null;
         }
 
-        if (! $this->isPublicListing($listing)) {
+        if (! $listing->isPublished()) {
             return null;
         }
 
@@ -73,12 +72,6 @@ class BuyerDealTrackerController extends Controller
             'price' => '₱ '.number_format((float) $listing->price, 0),
             'image' => $listing->media->first()?->url,
         ];
-    }
-
-    private function isPublicListing(Listing $listing): bool
-    {
-        return in_array($listing->status, [ListingStatus::Active, ListingStatus::UnderOffer], true)
-            && ! $listing->trashed();
     }
 
     /**

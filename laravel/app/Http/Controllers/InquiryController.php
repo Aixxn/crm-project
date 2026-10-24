@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Inquiries\CreateInquiry;
+use App\Actions\Lifecycle\ChangeRecord;
 use App\Http\Requests\Inquiries\StoreInquiryRequest;
 use App\Http\Requests\Inquiries\UpdateInquiryRequest;
 use App\Models\Contact;
 use App\Models\Inquiry;
 use App\Models\Listing;
+use App\Services\OwnershipScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,13 +20,15 @@ use Inertia\Response;
 
 class InquiryController extends Controller
 {
+    public function __construct(private OwnershipScope $ownershipScope) {}
+
     public function index(Request $request): JsonResponse|Response
     {
         Gate::authorize('viewAny', Inquiry::class);
 
-        $inquiries = Inquiry::query()
-            ->with(['listing:id,address,assigned_agent_id', 'contact:id,first_name,last_name,email,phone'])
-            ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->whereHas('listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id)))
+        $inquiries = $this->ownershipScope->scope($request->user(), Inquiry::query(), 'inquiry.read')
+            ->with(['listing' => $this->ownershipScope->readRelation($request->user()), 'contact' => $this->ownershipScope->readRelation($request->user())])
+
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('listing_id'), fn ($query) => $query->where('listing_id', $request->string('listing_id')->toString()))
             ->latest()
@@ -46,14 +51,15 @@ class InquiryController extends Controller
         Gate::authorize('create', Inquiry::class);
 
         return Inertia::render('inquiries/create', [
+            'canCreateContact' => $request->user()->hasPermission('contact.create') && $request->user()->hasPermission('inquiry.create'),
             'listings' => $this->listingOptions($request),
             'contacts' => $this->contactOptions($request),
         ]);
     }
 
-    public function store(StoreInquiryRequest $request): JsonResponse|RedirectResponse
+    public function store(StoreInquiryRequest $request, CreateInquiry $createInquiry): JsonResponse|RedirectResponse
     {
-        $inquiry = Inquiry::query()->create($request->validated());
+        $inquiry = $createInquiry->handle($request->user(), $request->validated());
 
         if ($request->expectsJson()) {
             return response()->json(['inquiry' => $inquiry], 201);
@@ -68,7 +74,7 @@ class InquiryController extends Controller
     {
         Gate::authorize('view', $inquiry);
 
-        $inquiry->load(['listing', 'contact']);
+        $inquiry->load(['listing' => $this->ownershipScope->readRelation($request->user()), 'contact' => $this->ownershipScope->readRelation($request->user())]);
 
         if ($request->expectsJson()) {
             return response()->json(['inquiry' => $inquiry]);
@@ -90,7 +96,7 @@ class InquiryController extends Controller
 
     public function update(UpdateInquiryRequest $request, Inquiry $inquiry): JsonResponse|RedirectResponse
     {
-        $inquiry->update($request->validated());
+        $inquiry = app(ChangeRecord::class)->update($request->user(), $inquiry, $request->validated());
 
         if ($request->expectsJson()) {
             return response()->json(['inquiry' => $inquiry->refresh()]);
@@ -121,9 +127,9 @@ class InquiryController extends Controller
      */
     private function listingOptions(Request $request): Collection
     {
-        return Listing::query()
+        return $this->ownershipScope->scope($request->user(), Listing::query(), 'listing.read')
             ->select(['id', 'address', 'assigned_agent_id'])
-            ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
+
             ->orderBy('address')
             ->get();
     }
@@ -133,16 +139,9 @@ class InquiryController extends Controller
      */
     private function contactOptions(Request $request): Collection
     {
-        return Contact::query()
+        return $this->ownershipScope->scope($request->user(), Contact::query(), 'contact.read')
             ->select(['id', 'first_name', 'last_name', 'email', 'phone'])
-            ->when(! $request->user()->hasRole('admin'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->whereHas('ownedListings', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('inquiries.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('viewings.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('offers.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id));
-                });
-            })
+
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();

@@ -1,5 +1,7 @@
 # Real Estate CRM - UI/UX Design Brief for Stitch
 
+> Historical design brief. The [current design system](design-system.md) governs shared tokens, status coverage, appearances and reusable patterns. The [architecture](architecture.md) distinguishes implemented features from intended behavior; this brief is not evidence that every described screen exists.
+
 ## Project Overview
 Design a listing-centric CRM web app for a single real estate agency. The product focuses on property/listing operations and a simple lifecycle: Listing -> Marketing -> Inquiries -> Viewings -> Offers -> Closed.
 

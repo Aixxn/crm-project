@@ -5,6 +5,8 @@ namespace App\Http\Requests\Listings;
 use App\Enums\ListingStatus;
 use App\Enums\OfferStatus;
 use App\Models\Listing;
+use App\Rules\AccessibleContact;
+use App\Rules\EligibleListingAgent;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,8 +29,11 @@ class UpdateListingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'assigned_agent_id' => ['required', 'integer', 'exists:users,id'],
-            'owner_contact_id' => ['required', 'uuid', 'exists:contacts,id'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+            'operation' => ['sometimes', 'string', Rule::in(['transition', 'correct', 'reopen'])],
+            'assigned_agent_id' => ['required', 'integer', new EligibleListingAgent],
+            'owner_contact_id' => ['required', 'uuid', new AccessibleContact($this->user())],
+            'new_owner' => ['prohibited'],
             'status' => ['required', Rule::enum(ListingStatus::class)],
             'address' => ['required', 'string', 'max:255'],
             'property_type' => ['nullable', 'string', 'max:255'],
@@ -42,11 +47,19 @@ class UpdateListingRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
             if (! $this->user()?->can('assignAgent', [Listing::class, (int) $this->input('assigned_agent_id')])) {
                 $validator->errors()->add('assigned_agent_id', 'You may only assign listings to yourself.');
             }
 
             $listing = $this->route('listing');
+
+            if ($listing instanceof Listing && ! $this->user()->hasRole('admin') && (int) $this->input('assigned_agent_id') !== (int) $listing->assigned_agent_id) {
+                $validator->errors()->add('assigned_agent_id', 'Only an administrator may reassign a listing.');
+            }
 
             if (
                 $listing instanceof Listing

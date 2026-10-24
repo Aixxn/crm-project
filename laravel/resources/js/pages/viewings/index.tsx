@@ -34,6 +34,7 @@ type ViewingIndexProps = {
 
 const statuses: Array<ViewingStatus | 'All'> = [
     'All',
+    'Requested',
     'Scheduled',
     'Completed',
     'No Show',

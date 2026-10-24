@@ -19,9 +19,9 @@ class ViewingCrudTest extends TestCase
 
     public function test_agent_can_create_viewing_for_assigned_listing_and_self(): void
     {
-        $agent = $this->userWithPermissions(['viewing.create']);
+        $agent = $this->userWithPermissions(['viewing.create', 'contact.read']);
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
 
         $response = $this->actingAs($agent)->postJson(route('viewings.store'), $this->payload($listing, $contact, $agent));
 
@@ -31,9 +31,9 @@ class ViewingCrudTest extends TestCase
 
     public function test_agent_can_update_and_delete_assigned_listing_viewing(): void
     {
-        $agent = $this->userWithPermissions(['viewing.read', 'viewing.update', 'viewing.delete']);
+        $agent = $this->userWithPermissions(['viewing.read', 'viewing.update', 'viewing.delete', 'contact.read']);
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
         $viewing = Viewing::factory()->create([
             'listing_id' => $listing->id,
             'contact_id' => $contact->id,
@@ -56,10 +56,10 @@ class ViewingCrudTest extends TestCase
 
     public function test_agent_cannot_assign_viewing_to_another_agent(): void
     {
-        $agent = $this->userWithPermissions(['viewing.create']);
+        $agent = $this->userWithPermissions(['viewing.create', 'contact.read']);
         $otherAgent = User::factory()->create();
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
 
         $this->actingAs($agent)
             ->postJson(route('viewings.store'), $this->payload($listing, $contact, $otherAgent))
@@ -126,7 +126,7 @@ class ViewingCrudTest extends TestCase
             'contact_id' => $contact->id,
             'agent_id' => $agent->id,
             'status' => ViewingStatus::Scheduled->value,
-            'scheduled_at' => now()->addDay()->toDateTimeString(),
+            'scheduled_at' => now()->addDay()->toISOString(),
         ], $overrides);
     }
 

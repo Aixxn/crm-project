@@ -17,9 +17,13 @@ class LoginResponse implements LoginResponseContract
         }
 
         $user = $request->user();
-        $destination = $user?->hasRole('admin') || $user?->hasRole('agent')
+        $destination = $user?->hasCrmAccess()
             ? Fortify::redirects('login')
             : route('public.my-home', absolute: false);
+
+        if ($user && ! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
 
         return redirect()->intended($destination);
     }

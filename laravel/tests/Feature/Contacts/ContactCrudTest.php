@@ -35,14 +35,13 @@ class ContactCrudTest extends TestCase
         ]);
     }
 
-    public function test_agent_can_create_contact_with_permission(): void
+    public function test_agent_cannot_create_standalone_contact_even_with_permission(): void
     {
         $agent = $this->userWithRoleAndPermissions('agent', ['contact.create']);
 
         $this->actingAs($agent)
             ->postJson(route('contacts.store'), $this->payload(['email' => 'agent-created@example.com']))
-            ->assertCreated()
-            ->assertJsonPath('contact.email', 'agent-created@example.com');
+            ->assertForbidden();
     }
 
     public function test_agent_index_is_scoped_to_contacts_linked_to_assigned_listings(): void
@@ -69,7 +68,7 @@ class ContactCrudTest extends TestCase
             ->assertJsonMissing(['id' => $hiddenContact->id]);
     }
 
-    public function test_agent_can_view_update_and_delete_contact_linked_to_assigned_listing(): void
+    public function test_agent_can_view_and_update_but_cannot_delete_exclusively_linked_contact(): void
     {
         $agent = $this->userWithRoleAndPermissions('agent', [
             'contact.read',
@@ -94,9 +93,9 @@ class ContactCrudTest extends TestCase
 
         $this->actingAs($agent)
             ->deleteJson(route('contacts.destroy', $contact))
-            ->assertNoContent();
+            ->assertForbidden();
 
-        $this->assertSoftDeleted('contacts', ['id' => $contact->id]);
+        $this->assertNotSoftDeleted('contacts', ['id' => $contact->id]);
     }
 
     public function test_agent_cannot_manage_unlinked_contact(): void

@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
+import { LifecycleFields } from '@/components/lifecycle-fields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +12,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { agencyDatetimeToIso, toAgencyDatetimeLocal } from '@/lib/agency-time';
 import viewings from '@/routes/viewings';
-import { contactName, toDatetimeLocal } from '../../workflow-support';
+import { contactName } from '../../workflow-support';
 import type {
     AgentOption,
     ContactOption,
@@ -21,6 +23,7 @@ import type {
 import type { ViewingFormData, ViewingStatus, ViewingSummary } from '../types';
 
 const statuses: ViewingStatus[] = [
+    'Requested',
     'Scheduled',
     'Completed',
     'No Show',
@@ -40,18 +43,25 @@ export function ViewingForm({
     contacts,
     agents,
 }: ViewingFormProps) {
-    const { data, setData, post, processing, errors } =
+    const { data, setData, post, transform, processing, errors } =
         useForm<ViewingFormData>({
+            operation: 'transition',
+            reason: '',
             listing_id: viewing?.listing_id ?? listings[0]?.id ?? '',
             contact_id: viewing?.contact_id ?? contacts[0]?.id ?? '',
             agent_id:
                 viewing?.agent_id.toString() ?? agents[0]?.id.toString() ?? '',
             status: viewing?.status ?? 'Scheduled',
-            scheduled_at: toDatetimeLocal(viewing?.scheduled_at),
+            scheduled_at: toAgencyDatetimeLocal(viewing?.scheduled_at),
         });
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        transform((values) => ({
+            ...values,
+            scheduled_at: agencyDatetimeToIso(values.scheduled_at),
+        }));
 
         if (viewing) {
             post(viewings.update.form.put(viewing).action);
@@ -130,20 +140,31 @@ export function ViewingForm({
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                            {statuses.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {status}
-                                </SelectItem>
-                            ))}
+                            {statuses
+                                .filter(
+                                    (status) =>
+                                        viewing ||
+                                        status === 'Requested' ||
+                                        status === 'Scheduled',
+                                )
+                                .map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                        {status}
+                                    </SelectItem>
+                                ))}
                         </SelectContent>
                     </Select>
                 </Field>
             </div>
 
             <div className="px-4 md:px-6">
-                <Field label="Scheduled at" error={errors.scheduled_at}>
+                <Field
+                    label="Scheduled at (Asia/Manila)"
+                    error={errors.scheduled_at}
+                >
                     <Input
                         type="datetime-local"
+                        step="1"
                         value={data.scheduled_at}
                         onChange={(event) =>
                             setData('scheduled_at', event.target.value)
@@ -151,6 +172,16 @@ export function ViewingForm({
                     />
                 </Field>
             </div>
+
+            {viewing && (
+                <LifecycleFields
+                    operation={data.operation}
+                    reason={data.reason}
+                    onOperation={(value) => setData('operation', value)}
+                    onReason={(value) => setData('reason', value)}
+                    errors={errors}
+                />
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
                 <Button variant="outline" asChild>

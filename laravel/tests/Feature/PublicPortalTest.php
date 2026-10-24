@@ -177,7 +177,8 @@ class PublicPortalTest extends TestCase
 
     public function test_buyer_inquiry_creates_crm_inquiry_with_buyer_contact(): void
     {
-        $buyer = User::factory()->create(['contact_id' => null]);
+        $buyerContact = Contact::factory()->create(['role' => ContactRole::Buyer]);
+        $buyer = User::factory()->create(['contact_id' => $buyerContact->id]);
         $listing = Listing::factory()->active()->create();
 
         $this->actingAs($buyer)
@@ -211,7 +212,7 @@ class PublicPortalTest extends TestCase
 
         $this->actingAs($buyer)
             ->post(route('public.viewing-requests.store', $listing), [
-                'scheduled_at' => $scheduledAt->toDateTimeString(),
+                'scheduled_at' => $scheduledAt->toISOString(),
             ])
             ->assertRedirect();
 
@@ -227,7 +228,7 @@ class PublicPortalTest extends TestCase
             'status' => InquiryStatus::New->value,
             'source' => 'Public Portal',
             'intent' => 'buy',
-            'message' => 'Viewing requested for '.$scheduledAt->format('M j, Y g:i A').'.',
+            'message' => 'Viewing requested for '.$scheduledAt->format('M j, Y g:i A').' UTC.',
         ]);
     }
 
@@ -249,7 +250,7 @@ class PublicPortalTest extends TestCase
 
         $this->actingAs($buyer)
             ->post(route('public.viewing-requests.store', $listing), [
-                'scheduled_at' => $scheduledAt->toDateTimeString(),
+                'scheduled_at' => $scheduledAt->toISOString(),
             ])
             ->assertRedirect();
 
@@ -261,7 +262,7 @@ class PublicPortalTest extends TestCase
             'listing_id' => $listing->id,
             'contact_id' => $buyerContact->id,
             'status' => InquiryStatus::Contacted->value,
-            'message' => 'Initial buyer message.'."\n\n".'Viewing requested for '.$scheduledAt->format('M j, Y g:i A').'.',
+            'message' => 'Initial buyer message.'."\n\n".'Viewing requested for '.$scheduledAt->format('M j, Y g:i A').' UTC.',
         ]);
         $this->assertDatabaseHas('viewings', [
             'listing_id' => $listing->id,
@@ -286,7 +287,7 @@ class PublicPortalTest extends TestCase
 
         $this->actingAs($buyer)
             ->post(route('public.viewing-requests.store', $listing), [
-                'scheduled_at' => $scheduledAt->toDateTimeString(),
+                'scheduled_at' => $scheduledAt->toISOString(),
             ])
             ->assertSessionHasErrors('scheduled_at');
 

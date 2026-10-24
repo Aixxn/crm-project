@@ -1,3 +1,4 @@
+import type { LifecycleOperation } from '@/types/lifecycle';
 import type {
     ContactOption,
     ListingOption,
@@ -20,6 +21,8 @@ export type OfferSummary = {
 };
 
 export type OfferFormData = {
+    operation: LifecycleOperation;
+    reason: string;
     listing_id: string;
     contact_id: string;
     status: OfferStatus;

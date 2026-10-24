@@ -22,22 +22,22 @@ class ContactPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission('contact.create');
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, Contact $contact): bool
     {
-        return $this->ownershipScope->canAccess($user, $contact, 'contact.update');
+        return $this->ownershipScope->canEditContact($user, $contact);
     }
 
     public function delete(User $user, Contact $contact): bool
     {
-        return $this->ownershipScope->canAccess($user, $contact, 'contact.delete');
+        return $user->hasRole('admin');
     }
 
     public function restore(User $user, Contact $contact): bool
     {
-        return $this->ownershipScope->canAccess($user, $contact, 'contact.delete');
+        return $user->hasRole('admin');
     }
 
     public function forceDelete(User $user, Contact $contact): bool

@@ -11,11 +11,13 @@ use App\Models\Inquiry;
 use App\Models\Listing;
 use App\Models\Note;
 use App\Models\Offer;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Viewing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -73,6 +75,7 @@ class DashboardTest extends TestCase
         ]);
         Listing::factory()->create([
             'status' => ListingStatus::Closed,
+            'closed_at' => now(),
             'updated_at' => now(),
         ]);
 
@@ -96,7 +99,11 @@ class DashboardTest extends TestCase
     public function test_dashboard_is_scoped_to_agent_assigned_listings(): void
     {
         $agent = User::factory()->create();
-        $agent->assignRole(Role::factory()->create(['key' => 'agent']));
+        $role = Role::factory()->create(['key' => 'agent']);
+        foreach (['listing.read', 'inquiry.read'] as $permission) {
+            $role->addPermission(Permission::factory()->create(['key' => $permission]));
+        }
+        $agent->assignRole($role);
         $visibleListing = Listing::factory()->create([
             'assigned_agent_id' => $agent->id,
             'status' => ListingStatus::Active,
@@ -122,6 +129,20 @@ class DashboardTest extends TestCase
                 ->has('activeListings', 1)
                 ->where('activeListings.0.id', $visibleListing->id)
             );
+    }
+
+    public function test_closed_month_uses_manila_boundaries_and_ignores_legacy_unknown_dates(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-31T16:30:00Z'));
+        $admin = $this->adminUser();
+        Listing::factory()->create(['status' => ListingStatus::Closed, 'closed_at' => '2026-10-31 15:59:59']);
+        $inMonth = Listing::factory()->create(['status' => ListingStatus::Closed, 'closed_at' => '2026-10-31 16:00:00', 'updated_at' => '2025-01-01 00:00:00']);
+        Listing::factory()->create(['status' => ListingStatus::Closed, 'closed_at' => '2026-11-30 16:00:00']);
+        Listing::factory()->create(['status' => ListingStatus::Closed, 'closed_at' => null]);
+        Listing::factory()->create(['status' => ListingStatus::ClosedLost, 'closed_at' => null]);
+        $this->actingAs($admin)->get(route('dashboard'))->assertInertia(fn (AssertableInertia $page) => $page->where('kpis.closedThisMonth', 1));
+        $inMonth->update(['address' => 'Metadata correction']);
+        $this->get(route('dashboard'))->assertInertia(fn (AssertableInertia $page) => $page->where('kpis.closedThisMonth', 1));
     }
 
     private function adminUser(): User

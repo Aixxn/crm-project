@@ -67,6 +67,8 @@ return [
 
     'timezone' => 'UTC',
 
+    'agency_timezone' => 'Asia/Manila',
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

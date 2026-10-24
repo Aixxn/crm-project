@@ -79,19 +79,23 @@ export default function ContactShow({ contact }: ContactShowProps) {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" asChild>
-                                <Link href={contacts.edit(contact)}>
-                                    <Pencil />
-                                    Edit
-                                </Link>
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={destroyContact}
-                            >
-                                <Trash2 />
-                                Delete
-                            </Button>
+                            {contact.can_update && (
+                                <Button variant="outline" asChild>
+                                    <Link href={contacts.edit(contact)}>
+                                        <Pencil />
+                                        Edit
+                                    </Link>
+                                </Button>
+                            )}
+                            {contact.can_delete && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={destroyContact}
+                                >
+                                    <Trash2 />
+                                    Delete
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>

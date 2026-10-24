@@ -1,230 +1,173 @@
-# Listing-Centric Real Estate CRM
+# Listing-centric real estate CRM
 
-This project is a listing-centric real estate CRM for a single agency workspace. It is built with Laravel 13, Inertia React v3, Tailwind CSS v4, Wayfinder, PHPUnit, and Pint.
+A real estate CRM for one agency, built with Laravel 13, Fortify, Inertia React 3, React 19, Tailwind CSS 4, and Wayfinder. PHPUnit and Pint cover backend verification and formatting.
 
-The CRM supports Admin and Agent workflows around listings, contacts, inquiries, viewings, offers, tasks, notes, and dashboard KPIs. Agents are scoped to listings assigned to them through `listing.assigned_agent_id`, while Admin users can manage all CRM records.
+Staff manage Listings, Contacts, Inquiries, Viewings, Offers, Tasks, Notes, and dashboard metrics. Admin retains global access. Agents and custom staff roles need both the resource permission and access to the assigned Listing. The customer portal has a separate navigation shell and uses the signed-in User's linked Contact.
 
-The buyer/lister-facing portal pages live outside the CRM side navigation and are intended for public or authenticated portal users. CRM access remains restricted to Admin and Agent roles.
+## Current implementation
+
+The access and identity work in Phase 1 and the lifecycle work in Phase 2 are implemented locally and covered by automated tests.
+
+- Shared visibility rules cover lists, details, related records, options, JSON responses, and dashboard metrics.
+- Registration creates a new User and Contact atomically. Email verification is enforced. Portal reads never claim an existing Contact by email.
+- Authorized Listing and Inquiry intake can create and link a new Contact in one transaction. Shared Contact edits are restricted.
+- Listing, Inquiry, Viewing, Offer, and Task updates follow explicit transitions and record actor, state, timestamp, and correction reason where required.
+- Offer acceptance updates the Listing in the same transaction. Database constraints prevent multiple Accepted Offers per Listing.
+- Successful closure records `closed_at`. Monthly metrics use Manila month boundaries and do not infer closure from later edits.
+- Public Viewing intake preserves buy/rent intent, normalizes offset-bearing times to UTC, and prevents duplicate active requests. Cancellation permits a deliberate new request.
+- Historical corrections require an administrator and a reason. Completed Tasks require an explicit reopen operation and reason.
+
+The next phase is **Phase 3: reliable media and announcements**. Upload compensation, durable announcement receipts, queued delivery, and replay recovery remain pending. See the [foundation roadmap](docs/foundation-roadmap.md) for all phases and completion gates.
+
+## Architecture and working rules
+
+Start with [CONTEXT.md](CONTEXT.md) for domain terms and [AGENTS.md](AGENTS.md) for repository rules.
+
+- [System architecture](docs/architecture.md) describes implemented behavior, module ownership, and remaining targets.
+- [Architecture decisions](docs/adr/README.md) records the accepted decisions.
+- [Design system](docs/design-system.md) defines the shared UI direction. Its broader migration remains pending.
+- [Foundation roadmap](docs/foundation-roadmap.md) records current verification and open work.
+- [Original validation record](docs/foundation-validation.md) preserves the October 22 review baseline.
+
+Historical May specifications and diagram images are references. Code, migrations, and meaningful tests establish implemented behavior.
 
 ## Requirements
 
-- PHP 8.5 recommended
-- Composer
-- Node.js and npm
-- SQLite for local development
-- Redis only when you intentionally switch sessions, cache, or rate limiting to Redis
+- PHP 8.5 recommended and Composer.
+- Node.js and npm, using the existing lockfile.
+- SQLite for local development.
 
-## Project Structure
+Sessions, cache, and queues use database drivers by default. Redis is optional.
 
-```text
-.
-├── design/                  # Class diagram and ERD references
-├── docs/superpowers/specs/  # MVP and RBAC design specs
-└── laravel/                 # Laravel + Inertia React application
-```
+The lifecycle migration supports SQLite and PostgreSQL syntax. Only SQLite has been verified, including competing-process tests. Other database engines fail that migration explicitly. Production database selection and concurrency verification remain open.
 
-Run application commands from the `laravel/` directory unless stated otherwise.
+## Project structure
 
-## First-Time Setup
+| Path | Purpose |
+| --- | --- |
+| `laravel/` | Laravel and Inertia React application |
+| `laravel/app/Actions/` | Coordinated identity, intake, and lifecycle operations |
+| `laravel/app/Services/` | Shared visibility and portal identity rules |
+| `laravel/resources/js/` | Staff and portal pages, shared UI, and transport types |
+| `laravel/tests/` | PHPUnit feature and unit tests |
+| `docs/` | Architecture, decisions, design system, and roadmap |
+| `design/` | Historical diagram references |
 
-1. Enter the Laravel app directory.
+## Set up a fresh local database
+
+Run application commands from `laravel/`.
 
 ```bash
 cd laravel
-```
-
-2. Install PHP dependencies.
-
-```bash
 composer install
-```
-
-3. Install JavaScript dependencies.
-
-```bash
-npm install
-```
-
-4. Create the environment file.
-
-```bash
+npm ci
 cp .env.example .env
-```
-
-5. Generate the application key.
-
-```bash
 php artisan key:generate
-```
-
-6. Make sure the SQLite database file exists.
-
-```bash
 touch database/database.sqlite
-```
-
-7. Run migrations and seed the default roles, permissions, and admin user.
-
-```bash
-php artisan migrate --seed
-```
-
-8. Build frontend assets once.
-
-```bash
+php artisan migrate
 npm run build
 ```
 
-You can also run the project setup script after entering `laravel/`:
+For a disposable demonstration database, optionally run:
 
 ```bash
-composer run setup
+php artisan db:seed
 ```
 
-If the SQLite database file does not exist before running the setup script, create it with:
+The seeder creates demo accounts and sample portal data. Keep demo provisioning separate from production account provisioning.
+
+Configure mail delivery to complete email verification. Registered users must verify their email before protected CRM or portal workflows become available. A staff account also needs the appropriate role and permissions.
+
+To expose uploaded listing images during local development, run:
 
 ```bash
-touch database/database.sqlite
+php artisan storage:link
 ```
 
-## Running the Project
+## Upgrade an existing development database
 
-1. Start the Laravel server, Vite dev server, queue listener, and log watcher together.
-
-```bash
-composer run dev
-```
-
-2. Open the app in your browser.
-
-```text
-http://localhost:8000
-```
-
-The Vite server runs separately and is used by Laravel automatically during development.
-
-## Default Login
-
-Admin and Agent users can access the CRM dashboard and side panel. Regular registered portal users should remain on buyer/lister portal pages and should not be allowed into the CRM admin area.
-
-## Useful Local Commands
-
-Run migrations:
+Back up the database before applying additive migrations:
 
 ```bash
 php artisan migrate
 ```
 
-Reset and reseed the local database:
+The lifecycle migration stops before schema changes if it finds multiple Accepted Offers for one Listing, duplicate active Viewing times, or soft-deleted Submitted Offers. Review and resolve those records before retrying. The migration does not silently choose winners or remove history.
+
+Existing Closed Listings retain a null `closed_at` unless an authoritative closure date is available through a separately reviewed backfill. Unknown dates are excluded from monthly closure metrics.
+
+A verified legacy portal account without a valid Contact association receives a safe conflict response. An administrator can repair it explicitly using record IDs:
 
 ```bash
-php artisan migrate:fresh --seed
+php artisan portal:repair-contact USER_ID --actor=ADMIN_ID --contact=CONTACT_UUID
+php artisan portal:repair-contact USER_ID --actor=ADMIN_ID --create
 ```
 
-Run the PHP test suite:
+These commands reject unverified accounts, deleted Contacts, conflicting associations, and non-Admin actors. Repeating the same repair preserves the association.
+
+## Run locally
+
+```bash
+composer run dev
+```
+
+This starts Laravel, Vite, a queue listener, and the log watcher. Open the local Laravel address printed by the command, normally `http://localhost:8000`.
+
+The existing listing-announcement notification is still synchronous. Starting a queue listener does not complete Phase 3's queued announcement delivery.
+
+## Verify changes
+
+Run from `laravel/`:
 
 ```bash
 php artisan test --compact
-```
-
-Run a targeted PHPUnit test:
-
-```bash
-php artisan test --compact --filter=ExampleTest
-```
-
-Format changed PHP files:
-
-```bash
 vendor/bin/pint --dirty --format agent
-```
-
-Run PHP lint checks through Composer:
-
-```bash
-composer run lint:check
-```
-
-Run frontend type checks:
-
-```bash
 npm run types:check
-```
-
-Run frontend lint checks:
-
-```bash
 npm run lint:check
-```
-
-Run frontend formatting checks:
-
-```bash
 npm run format:check
+npm run build
 ```
 
-Build production frontend assets:
+For a targeted test run:
+
+```bash
+php artisan test --compact tests/Feature/Workflows/LifecycleMatrixTest.php
+```
+
+The combined `composer run ci:check` command does not include the frontend production build. Run `npm run build` separately.
+
+### Latest recorded results
+
+On October 24, 2026, the full suite passed **305 tests and 2,153 assertions**. TypeScript, ESLint, Pint, changed-file frontend formatting, the production build, and `git diff --check` passed.
+
+Global `npm run format:check` still reports 14 untouched resource files. Browser visual verification for Phases 1 and 2 remains open because the isolated preview could not be reached and browser policy blocked the local-file fallback. Automated render tests do not replace that review.
+
+Production-engine verification, deployment provisioning, and the later roadmap phases remain open. No production migrations or real account repairs were performed during these checks.
+
+## Troubleshooting
+
+If assets are missing or Laravel reports a Vite manifest error:
 
 ```bash
 npm run build
 ```
 
-Run the combined CI-style check:
-
-```bash
-composer run ci:check
-```
-
-## Environment Notes
-
-The default `.env.example` uses SQLite and database-backed sessions, cache, and queue records:
-
-```text
-DB_CONNECTION=sqlite
-SESSION_DRIVER=database
-CACHE_STORE=database
-QUEUE_CONNECTION=database
-```
-
-For local development, this keeps setup simple and does not require Redis. If you switch Redis on for sessions, cache, or rate limiting, make sure Redis is running and update the related `.env` values.
-
-## Common Troubleshooting
-
-If assets are missing or the page shows a Vite manifest error, run:
-
-```bash
-npm run build
-```
-
-If the app key is missing, run:
+If the application key is missing:
 
 ```bash
 php artisan key:generate
 ```
 
-If the database tables are missing, run:
+If tables are missing from a fresh local database:
 
 ```bash
-php artisan migrate --seed
+php artisan migrate
 ```
 
-If login says the credentials do not match, confirm the database was seeded and use:
-
-```text
-test@example.com / password
-```
-
-If the development server is already using port `8000`, start Laravel on another port:
+If port 8000 is already in use:
 
 ```bash
 php artisan serve --port=8001
 ```
 
-## Reference Documents
-
-- `design/Class Diagram.png`
-- `design/ERD DIAGRAM.png`
-- `docs/superpowers/specs/2026-05-10-real-estate-crm-listings-mvp-design.md`
-- `docs/superpowers/specs/2026-05-21-flexible-rbac-class-model-design.md`
-- `laravel/CLAUDE.md`
-- `laravel/AGENTS.md`
+For verification failures, check mail configuration and the account's verification status. For a missing portal Contact association, use the explicit Admin repair flow rather than email-based claiming.

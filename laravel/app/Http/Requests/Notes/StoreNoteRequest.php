@@ -39,6 +39,10 @@ class StoreNoteRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
             $relatedEntity = $this->relatedEntity();
 
             if (! $relatedEntity) {
@@ -58,22 +62,11 @@ class StoreNoteRequest extends FormRequest
      */
     private function allowedRelatedEntityTypes(): array
     {
-        return [
-            Listing::class,
-            Inquiry::class,
-            Contact::class,
-            Offer::class,
-        ];
+        return OwnershipScope::PARENTS;
     }
 
     private function relatedEntity(): Contact|Inquiry|Listing|Offer|null
     {
-        $type = $this->string('related_entity_type')->toString();
-
-        if (! in_array($type, $this->allowedRelatedEntityTypes(), true)) {
-            return null;
-        }
-
-        return $type::query()->find($this->input('related_entity_id'));
+        return app(OwnershipScope::class)->resolveParent($this->string('related_entity_type')->toString(), $this->string('related_entity_id')->toString());
     }
 }

@@ -7,7 +7,6 @@ use App\Enums\ListingStatus;
 use App\Enums\OfferStatus;
 use App\Enums\TaskStatus;
 use App\Enums\ViewingStatus;
-use App\Models\Contact;
 use App\Models\Inquiry;
 use App\Models\Listing;
 use App\Models\Note;
@@ -15,6 +14,7 @@ use App\Models\Offer;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Viewing;
+use App\Services\OwnershipScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -23,6 +23,8 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(private OwnershipScope $ownershipScope) {}
+
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
@@ -57,7 +59,8 @@ class DashboardController extends Controller
                 ->count(),
             'closedThisMonth' => $this->listingQuery($user)
                 ->where('status', ListingStatus::Closed)
-                ->whereBetween('updated_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->where('closed_at', '>=', now(config('app.agency_timezone', 'Asia/Manila'))->startOfMonth()->utc())
+                ->where('closed_at', '<', now(config('app.agency_timezone', 'Asia/Manila'))->startOfMonth()->addMonth()->utc())
                 ->count(),
         ];
     }
@@ -82,7 +85,7 @@ class DashboardController extends Controller
             ]);
 
         $inquiries = $this->inquiryQuery($user)
-            ->with(['listing:id,address'])
+            ->with(['listing' => $this->ownershipScope->readRelation($user)])
             ->latest('updated_at')
             ->limit(4)
             ->get()
@@ -96,7 +99,7 @@ class DashboardController extends Controller
             ]);
 
         $offers = $this->offerQuery($user)
-            ->with(['listing:id,address'])
+            ->with(['listing' => $this->ownershipScope->readRelation($user)])
             ->latest('updated_at')
             ->limit(4)
             ->get()
@@ -138,7 +141,7 @@ class DashboardController extends Controller
     private function upcomingViewings(User $user): Collection
     {
         return $this->viewingQuery($user)
-            ->with(['listing:id,address', 'contact:id,first_name,last_name', 'agent:id,name'])
+            ->with(['listing' => $this->ownershipScope->readRelation($user), 'contact' => $this->ownershipScope->readRelation($user), 'agent:id,name'])
             ->where('status', ViewingStatus::Scheduled)
             ->where('scheduled_at', '>=', now())
             ->orderBy('scheduled_at')
@@ -167,7 +170,7 @@ class DashboardController extends Controller
     private function activeListings(User $user): Collection
     {
         return $this->listingQuery($user)
-            ->withCount(['inquiries', 'viewings', 'offers'])
+            ->withCount(array_fill_keys(['inquiries', 'viewings', 'offers'], $this->ownershipScope->readRelation($user)))
             ->whereIn('status', [ListingStatus::Active, ListingStatus::UnderOffer])
             ->latest()
             ->limit(5)
@@ -176,75 +179,31 @@ class DashboardController extends Controller
 
     private function listingQuery(User $user): Builder
     {
-        return Listing::query()
-            ->when(! $user->hasRole('admin'), fn (Builder $query) => $query->where('assigned_agent_id', $user->id));
+        return $this->ownershipScope->scope($user, Listing::query(), 'listing.read');
     }
 
     private function inquiryQuery(User $user): Builder
     {
-        return Inquiry::query()
-            ->when(! $user->hasRole('admin'), fn (Builder $query) => $query->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id)));
+        return $this->ownershipScope->scope($user, Inquiry::query(), 'inquiry.read');
     }
 
     private function viewingQuery(User $user): Builder
     {
-        return Viewing::query()
-            ->when(! $user->hasRole('admin'), fn (Builder $query) => $query->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id)));
+        return $this->ownershipScope->scope($user, Viewing::query(), 'viewing.read');
     }
 
     private function offerQuery(User $user): Builder
     {
-        return Offer::query()
-            ->when(! $user->hasRole('admin'), fn (Builder $query) => $query->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id)));
+        return $this->ownershipScope->scope($user, Offer::query(), 'offer.read');
     }
 
     private function taskQuery(User $user): Builder
     {
-        return Task::query()
-            ->when(! $user->hasRole('admin'), fn (Builder $query) => $query->where(function (Builder $query) use ($user): void {
-                $query->where(fn (Builder $query) => $query
-                    ->where('related_entity_type', Listing::class)
-                    ->whereIn('related_entity_id', Listing::query()->select('id')->where('assigned_agent_id', $user->id)))
-                    ->orWhere(fn (Builder $query) => $query
-                        ->where('related_entity_type', Inquiry::class)
-                        ->whereIn('related_entity_id', Inquiry::query()->select('id')->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id))))
-                    ->orWhere(fn (Builder $query) => $query
-                        ->where('related_entity_type', Offer::class)
-                        ->whereIn('related_entity_id', Offer::query()->select('id')->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id))))
-                    ->orWhere(fn (Builder $query) => $query
-                        ->where('related_entity_type', Contact::class)
-                        ->whereIn('related_entity_id', $this->accessibleContactIds($user->id)));
-            }));
+        return $this->ownershipScope->scope($user, Task::query(), 'task.read');
     }
 
     private function noteQuery(User $user): Builder
     {
-        return Note::query()
-            ->when(! $user->hasRole('admin'), fn (Builder $query) => $query->where(function (Builder $query) use ($user): void {
-                $query->where(fn (Builder $query) => $query
-                    ->where('related_entity_type', Listing::class)
-                    ->whereIn('related_entity_id', Listing::query()->select('id')->where('assigned_agent_id', $user->id)))
-                    ->orWhere(fn (Builder $query) => $query
-                        ->where('related_entity_type', Inquiry::class)
-                        ->whereIn('related_entity_id', Inquiry::query()->select('id')->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id))))
-                    ->orWhere(fn (Builder $query) => $query
-                        ->where('related_entity_type', Offer::class)
-                        ->whereIn('related_entity_id', Offer::query()->select('id')->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $user->id))))
-                    ->orWhere(fn (Builder $query) => $query
-                        ->where('related_entity_type', Contact::class)
-                        ->whereIn('related_entity_id', $this->accessibleContactIds($user->id)));
-            }));
-    }
-
-    private function accessibleContactIds(int $userId): Builder
-    {
-        return Contact::query()
-            ->select('id')
-            ->where(function (Builder $query) use ($userId): void {
-                $query->whereHas('ownedListings', fn (Builder $query) => $query->where('assigned_agent_id', $userId))
-                    ->orWhereHas('inquiries.listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId))
-                    ->orWhereHas('viewings.listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId))
-                    ->orWhereHas('offers.listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId));
-            });
+        return $this->ownershipScope->scope($user, Note::query(), 'note.read');
     }
 }

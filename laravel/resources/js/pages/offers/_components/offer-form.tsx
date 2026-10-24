@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
+import { LifecycleFields } from '@/components/lifecycle-fields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,8 @@ type OfferFormProps = {
 
 export function OfferForm({ offer, listings, contacts }: OfferFormProps) {
     const { data, setData, post, processing, errors } = useForm<OfferFormData>({
+        operation: 'transition',
+        reason: '',
         listing_id: offer?.listing_id ?? listings[0]?.id ?? '',
         contact_id: offer?.contact_id ?? contacts[0]?.id ?? '',
         status: offer?.status ?? 'Submitted',
@@ -98,11 +101,15 @@ export function OfferForm({ offer, listings, contacts }: OfferFormProps) {
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                            {statuses.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {status}
-                                </SelectItem>
-                            ))}
+                            {statuses
+                                .filter(
+                                    (status) => offer || status === 'Submitted',
+                                )
+                                .map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                        {status}
+                                    </SelectItem>
+                                ))}
                         </SelectContent>
                     </Select>
                 </Field>
@@ -129,6 +136,16 @@ export function OfferForm({ offer, listings, contacts }: OfferFormProps) {
                     />
                 </Field>
             </div>
+            {offer && (
+                <LifecycleFields
+                    operation={data.operation}
+                    reason={data.reason}
+                    onOperation={(value) => setData('operation', value)}
+                    onReason={(value) => setData('reason', value)}
+                    errors={errors}
+                />
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
                 <Button variant="outline" asChild>
                     <Link href={offer ? offers.show(offer) : offers.index()}>

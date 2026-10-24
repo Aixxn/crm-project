@@ -23,6 +23,7 @@ import contacts from '@/routes/contacts';
 import type { ContactRole, PaginatedContacts } from './types';
 
 type ContactIndexProps = {
+    canCreateContact?: boolean;
     contacts: PaginatedContacts;
     filters: {
         search?: string;
@@ -33,6 +34,7 @@ type ContactIndexProps = {
 const roles: Array<ContactRole | 'All'> = ['All', 'Owner', 'Buyer', 'Tenant'];
 
 export default function ContactIndex({
+    canCreateContact = false,
     contacts: paginated,
     filters,
 }: ContactIndexProps) {
@@ -68,12 +70,14 @@ export default function ContactIndex({
                                 workflow activity.
                             </p>
                         </div>
-                        <Button asChild>
-                            <Link href={contacts.create()}>
-                                <Plus />
-                                New contact
-                            </Link>
-                        </Button>
+                        {canCreateContact && (
+                            <Button asChild>
+                                <Link href={contacts.create()}>
+                                    <Plus />
+                                    New contact
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -191,20 +195,22 @@ export default function ContactIndex({
                                                             <Eye />
                                                         </Link>
                                                     </Button>
-                                                    <Button
-                                                        size="icon"
-                                                        variant="outline"
-                                                        asChild
-                                                        aria-label="Edit contact"
-                                                    >
-                                                        <Link
-                                                            href={contacts.edit(
-                                                                contact,
-                                                            )}
+                                                    {contact.can_update && (
+                                                        <Button
+                                                            size="icon"
+                                                            variant="outline"
+                                                            asChild
+                                                            aria-label="Edit contact"
                                                         >
-                                                            <Pencil />
-                                                        </Link>
-                                                    </Button>
+                                                            <Link
+                                                                href={contacts.edit(
+                                                                    contact,
+                                                                )}
+                                                            >
+                                                                <Pencil />
+                                                            </Link>
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

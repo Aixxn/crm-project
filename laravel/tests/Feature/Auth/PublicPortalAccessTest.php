@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Contact;
 use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
@@ -38,7 +39,7 @@ class PublicPortalAccessTest extends TestCase
 
     public function test_public_portal_user_can_open_buyer_lister_pages(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['contact_id' => Contact::factory()->create()->id]);
         $listing = Listing::factory()->active()->create();
 
         $publicRoutes = [

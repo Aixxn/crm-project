@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ListingStatus;
 use App\Models\Listing;
 use App\Models\PortalSearch;
 use App\Models\SavedListing;
@@ -18,10 +17,11 @@ class BuyerHomeController extends Controller
 
     public function __invoke(Request $request): Response
     {
-        $contact = $this->buyerPortalScope->ensureContact($request->user());
+        $contact = $this->buyerPortalScope->contact($request->user());
 
         $savedListings = $request->user()
             ->savedListings()
+            ->whereHas('listing', fn ($query) => $query->published())
             ->with(['listing.media' => fn ($query) => $query->orderBy('sort_order')])
             ->latest()
             ->take(8)
@@ -32,7 +32,7 @@ class BuyerHomeController extends Controller
             ->where('scheduled_at', '>=', now())
             ->orderBy('scheduled_at')
             ->get()
-            ->first(fn (Viewing $viewing) => $viewing->listing && $this->isPublicListing($viewing->listing));
+            ->first(fn (Viewing $viewing) => $viewing->listing && $viewing->listing->isPublished());
 
         return Inertia::render('public/my-home', [
             'profile' => [
@@ -69,7 +69,7 @@ class BuyerHomeController extends Controller
             return null;
         }
 
-        if (! $this->isPublicListing($listing)) {
+        if (! $listing->isPublished()) {
             return null;
         }
 
@@ -81,12 +81,6 @@ class BuyerHomeController extends Controller
             'image' => $listing->media->first()?->url,
             'status' => $listing->status->value,
         ];
-    }
-
-    private function isPublicListing(Listing $listing): bool
-    {
-        return in_array($listing->status, [ListingStatus::Active, ListingStatus::UnderOffer], true)
-            && ! $listing->trashed();
     }
 
     /**

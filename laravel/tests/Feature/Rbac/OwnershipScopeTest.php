@@ -89,6 +89,31 @@ class OwnershipScopeTest extends TestCase
         $this->assertFalse($this->scope()->canAccess($agent, $contact, 'contact.read'));
     }
 
+    public function test_contact_activity_replaces_preloaded_relations_with_authorized_collections(): void
+    {
+        $agent = $this->agentWithPermission('contact.read');
+        $contact = Contact::factory()->create();
+        $listing = Listing::factory()->create([
+            'assigned_agent_id' => $agent->id,
+            'owner_contact_id' => $contact->id,
+        ]);
+        $attributes = ['listing_id' => $listing->id, 'contact_id' => $contact->id];
+        Inquiry::factory()->create($attributes);
+        Viewing::factory()->create($attributes);
+        Offer::factory()->create($attributes);
+        $contact->load(['ownedListings', 'inquiries.listing', 'viewings.listing', 'offers.listing']);
+
+        foreach (['ownedListings', 'inquiries', 'viewings', 'offers'] as $relation) {
+            $this->assertCount(1, $contact->getRelation($relation));
+        }
+
+        $this->scope()->loadContactActivity($agent, $contact);
+
+        foreach (['ownedListings', 'inquiries', 'viewings', 'offers'] as $relation) {
+            $this->assertCount(0, $contact->getRelation($relation));
+        }
+    }
+
     private function agentWithPermission(string $permissionKey): User
     {
         $agent = User::factory()->create();

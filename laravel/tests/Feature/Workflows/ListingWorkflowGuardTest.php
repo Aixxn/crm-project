@@ -5,7 +5,6 @@ namespace Tests\Feature\Workflows;
 use App\Enums\ListingStatus;
 use App\Enums\OfferStatus;
 use App\Enums\ViewingStatus;
-use App\Models\Contact;
 use App\Models\Listing;
 use App\Models\Offer;
 use App\Models\Permission;
@@ -20,12 +19,12 @@ class ListingWorkflowGuardTest extends TestCase
 
     public function test_viewing_cannot_be_created_for_closed_listing(): void
     {
-        $agent = $this->userWithPermissions(['viewing.create']);
+        $agent = $this->userWithPermissions(['viewing.create', 'contact.read']);
         $listing = Listing::factory()->create([
             'assigned_agent_id' => $agent->id,
             'status' => ListingStatus::Closed,
         ]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
 
         $this->actingAs($agent)
             ->postJson(route('viewings.store'), [
@@ -33,7 +32,7 @@ class ListingWorkflowGuardTest extends TestCase
                 'contact_id' => $contact->id,
                 'agent_id' => $agent->id,
                 'status' => ViewingStatus::Scheduled->value,
-                'scheduled_at' => now()->addDay()->toDateTimeString(),
+                'scheduled_at' => now()->addDay()->toISOString(),
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('listing_id');
@@ -41,7 +40,7 @@ class ListingWorkflowGuardTest extends TestCase
 
     public function test_listing_cannot_be_closed_with_submitted_offers(): void
     {
-        $agent = $this->userWithPermissions(['listing.update']);
+        $agent = $this->userWithPermissions(['listing.update', 'contact.read']);
         $listing = Listing::factory()->create([
             'assigned_agent_id' => $agent->id,
             'status' => ListingStatus::Active,

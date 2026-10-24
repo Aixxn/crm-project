@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ContactRole;
-use App\Enums\ListingStatus;
 use App\Models\Listing;
 use App\Models\User;
 use App\Notifications\ListingOfferedNotification;
@@ -25,7 +24,7 @@ class ListingWebhookController extends Controller
 
         $listing = Listing::query()
             ->whereKey($validated['listing_id'])
-            ->whereIn('status', [ListingStatus::Active, ListingStatus::UnderOffer])
+            ->published()
             ->first();
 
         if (! $listing instanceof Listing) {

@@ -1,4 +1,6 @@
 import type { User } from '@/types';
+import type { LifecycleOperation } from '@/types/lifecycle';
+import type { NewContactInput } from '../contacts/types';
 
 export type ListingStatus =
     | 'Draft'
@@ -43,6 +45,9 @@ export type ListingSummary = {
 };
 
 export type ListingFormData = {
+    operation: LifecycleOperation;
+    reason: string;
+    new_owner: NewContactInput | null;
     assigned_agent_id: string;
     owner_contact_id: string;
     status: ListingStatus;

@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class RbacPermissionTest extends TestCase
@@ -61,5 +62,10 @@ class RbacPermissionTest extends TestCase
         $this->assertSame(32, Permission::count());
         $this->assertSame(1, User::where('email', 'test@example.com')->count());
         $this->assertTrue(User::where('email', 'test@example.com')->firstOrFail()->hasRole('admin'));
+
+        $agent = User::where('email', 'agent@example.com')->firstOrFail();
+
+        $this->assertTrue(Hash::check('password', $agent->password));
+        $this->assertTrue($agent->hasRole('agent'));
     }
 }

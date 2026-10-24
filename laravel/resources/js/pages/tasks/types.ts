@@ -1,3 +1,4 @@
+import type { LifecycleOperation } from '@/types/lifecycle';
 import type {
     AgentOption,
     Paginated,
@@ -23,6 +24,8 @@ export type TaskSummary = {
 export type PaginatedTasks = Paginated<TaskSummary>;
 
 export type TaskFormData = {
+    operation: LifecycleOperation;
+    reason: string;
     assignee_id: number | string;
     title: string;
     due_date: string;

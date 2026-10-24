@@ -10,8 +10,11 @@
 .env
 .env.*
 !.env.example
+/.aws
 auth.json
 .superpowers/
+/.worktrees/
+/laravel/.worktrees/
 # Logs / caches
 *.log
 dev.log
@@ -28,7 +31,14 @@ laravel/vendor/
 laravel/storage/*.key
 laravel/storage/pail/
 laravel/public/storage/
-docs
+/docs/*
+!/docs/architecture.md
+!/docs/design-system.md
+!/docs/foundation-roadmap.md
+!/docs/foundation-validation.md
+!/docs/adr/
+/docs/adr/*
+!/docs/adr/*.md
 # Node dependencies and frontend build output
 node_modules/
 laravel/node_modules/
@@ -43,6 +53,7 @@ laravel/resources/js/routes/
 laravel/resources/js/wayfinder/
 
 # Local MCP / agent state
+/.audit/
 .playwright-mcp/
 laravel/.agents/
 laravel/.claude/

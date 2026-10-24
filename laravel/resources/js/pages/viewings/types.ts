@@ -1,3 +1,4 @@
+import type { LifecycleOperation } from '@/types/lifecycle';
 import type {
     AgentOption,
     ContactOption,
@@ -5,7 +6,12 @@ import type {
     Paginated,
 } from '../workflow-support';
 
-export type ViewingStatus = 'Scheduled' | 'Completed' | 'No Show' | 'Cancelled';
+export type ViewingStatus =
+    | 'Requested'
+    | 'Scheduled'
+    | 'Completed'
+    | 'No Show'
+    | 'Cancelled';
 
 export type ViewingSummary = {
     id: string;
@@ -22,6 +28,8 @@ export type ViewingSummary = {
 };
 
 export type ViewingFormData = {
+    operation: LifecycleOperation;
+    reason: string;
     listing_id: string;
     contact_id: string;
     agent_id: string;

@@ -1,3 +1,5 @@
+import type { LifecycleOperation } from '@/types/lifecycle';
+import type { NewContactInput } from '../contacts/types';
 import type {
     ContactOption,
     ListingOption,
@@ -26,6 +28,9 @@ export type InquirySummary = {
 };
 
 export type InquiryFormData = {
+    operation: LifecycleOperation;
+    reason: string;
+    new_contact: NewContactInput | null;
     listing_id: string;
     contact_id: string;
     status: InquiryStatus;

@@ -9,6 +9,7 @@ use App\Models\Inquiry;
 use App\Models\Listing;
 use App\Models\Note;
 use App\Models\Offer;
+use App\Services\OwnershipScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,13 +21,15 @@ use Inertia\Response;
 
 class NoteController extends Controller
 {
+    public function __construct(private OwnershipScope $ownershipScope) {}
+
     public function index(Request $request): JsonResponse|Response
     {
         Gate::authorize('viewAny', Note::class);
 
-        $notes = Note::query()
-            ->with(['author:id,name,email', 'relatedEntity'])
-            ->when(! $request->user()->hasRole('admin'), fn (Builder $query) => $this->scopeToAccessibleRelatedEntities($query, $request))
+        $notes = $this->ownershipScope->scope($request->user(), Note::query(), 'note.read')
+            ->with(['author:id,name,email', 'relatedEntity' => $this->ownershipScope->readRelation($request->user())])
+
             ->when($request->filled('related_entity_type'), fn (Builder $query) => $query->where('related_entity_type', $request->string('related_entity_type')->toString()))
             ->latest()
             ->paginate(15)
@@ -72,7 +75,7 @@ class NoteController extends Controller
     {
         Gate::authorize('view', $note);
 
-        $note->load(['author:id,name,email', 'relatedEntity']);
+        $note->load(['author:id,name,email', 'relatedEntity' => $this->ownershipScope->readRelation($request->user())]);
 
         if ($request->expectsJson()) {
             return response()->json(['note' => $note]);
@@ -86,7 +89,7 @@ class NoteController extends Controller
         Gate::authorize('update', $note);
 
         return Inertia::render('notes/edit', [
-            'note' => $note->load(['author:id,name,email', 'relatedEntity']),
+            'note' => $note->load(['author:id,name,email', 'relatedEntity' => $this->ownershipScope->readRelation($request->user())]),
             'relatedEntities' => $this->relatedEntityOptions($request),
         ]);
     }
@@ -119,37 +122,15 @@ class NoteController extends Controller
         return to_route('notes.index');
     }
 
-    private function scopeToAccessibleRelatedEntities(Builder $query, Request $request): void
-    {
-        $userId = $request->user()->id;
-
-        $query->where(function (Builder $query) use ($userId): void {
-            $query->where(fn (Builder $query) => $query
-                ->where('related_entity_type', Listing::class)
-                ->whereIn('related_entity_id', Listing::query()->select('id')->where('assigned_agent_id', $userId)))
-                ->orWhere(fn (Builder $query) => $query
-                    ->where('related_entity_type', Inquiry::class)
-                    ->whereIn('related_entity_id', Inquiry::query()->select('id')->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId))))
-                ->orWhere(fn (Builder $query) => $query
-                    ->where('related_entity_type', Offer::class)
-                    ->whereIn('related_entity_id', Offer::query()->select('id')->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId))))
-                ->orWhere(fn (Builder $query) => $query
-                    ->where('related_entity_type', Contact::class)
-                    ->whereIn('related_entity_id', $this->accessibleContactIds($userId)));
-        });
-    }
-
     /**
      * @return Collection<int, array{id: string, type: class-string, kind: string, label: string}>
      */
     private function relatedEntityOptions(Request $request): Collection
     {
-        $userId = $request->user()->id;
-        $admin = $request->user()->hasRole('admin');
 
-        $listings = Listing::query()
+        $listings = $this->ownershipScope->scope($request->user(), Listing::query(), 'listing.read')
             ->select(['id', 'address', 'assigned_agent_id'])
-            ->when(! $admin, fn (Builder $query) => $query->where('assigned_agent_id', $userId))
+
             ->orderBy('address')
             ->get()
             ->map(fn (Listing $listing) => [
@@ -159,10 +140,10 @@ class NoteController extends Controller
                 'label' => $listing->address,
             ]);
 
-        $inquiries = Inquiry::query()
+        $inquiries = $this->ownershipScope->scope($request->user(), Inquiry::query(), 'inquiry.read')
             ->select(['id', 'listing_id', 'source', 'intent'])
-            ->with('listing:id,address,assigned_agent_id')
-            ->when(! $admin, fn (Builder $query) => $query->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId)))
+            ->with(['listing' => $this->ownershipScope->readRelation($request->user())])
+
             ->latest()
             ->get()
             ->map(fn (Inquiry $inquiry) => [
@@ -172,9 +153,9 @@ class NoteController extends Controller
                 'label' => trim("{$inquiry->listing?->address} {$inquiry->intent}"),
             ]);
 
-        $contacts = Contact::query()
+        $contacts = $this->ownershipScope->scope($request->user(), Contact::query(), 'contact.read')
             ->select(['id', 'first_name', 'last_name', 'email'])
-            ->when(! $admin, fn (Builder $query) => $query->whereIn('id', $this->accessibleContactIds($userId)))
+
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get()
@@ -185,10 +166,10 @@ class NoteController extends Controller
                 'label' => trim("{$contact->first_name} {$contact->last_name}") ?: $contact->email,
             ]);
 
-        $offers = Offer::query()
+        $offers = $this->ownershipScope->scope($request->user(), Offer::query(), 'offer.read')
             ->select(['id', 'listing_id', 'amount'])
-            ->with('listing:id,address,assigned_agent_id')
-            ->when(! $admin, fn (Builder $query) => $query->whereHas('listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId)))
+            ->with(['listing' => $this->ownershipScope->readRelation($request->user())])
+
             ->latest()
             ->get()
             ->map(fn (Offer $offer) => [
@@ -199,17 +180,5 @@ class NoteController extends Controller
             ]);
 
         return $listings->concat($inquiries)->concat($contacts)->concat($offers)->values();
-    }
-
-    private function accessibleContactIds(int $userId): Builder
-    {
-        return Contact::query()
-            ->select('id')
-            ->where(function (Builder $query) use ($userId): void {
-                $query->whereHas('ownedListings', fn (Builder $query) => $query->where('assigned_agent_id', $userId))
-                    ->orWhereHas('inquiries.listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId))
-                    ->orWhereHas('viewings.listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId))
-                    ->orWhereHas('offers.listing', fn (Builder $query) => $query->where('assigned_agent_id', $userId));
-            });
     }
 }

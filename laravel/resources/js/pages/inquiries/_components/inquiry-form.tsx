@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
+import { LifecycleFields } from '@/components/lifecycle-fields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import inquiries from '@/routes/inquiries';
+import { IntakeContactFields } from '../../contacts/_components/intake-contact-fields';
 import { contactName } from '../../workflow-support';
 import type { ContactOption, ListingOption } from '../../workflow-support';
 import type { InquiryFormData, InquiryStatus, InquirySummary } from '../types';
@@ -25,14 +27,26 @@ const statuses: InquiryStatus[] = [
 ];
 
 type InquiryFormProps = {
+    canCreateContact?: boolean;
     inquiry?: InquirySummary;
     listings: ListingOption[];
     contacts: ContactOption[];
 };
 
-export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
-    const { data, setData, post, processing, errors } =
+export function InquiryForm({
+    canCreateContact = false,
+    inquiry,
+    listings,
+    contacts,
+}: InquiryFormProps) {
+    const { data, setData, post, put, transform, processing, errors } =
         useForm<InquiryFormData>({
+            operation: 'transition',
+            reason: '',
+            new_contact:
+                !inquiry && canCreateContact && contacts.length === 0
+                    ? { first_name: '', last_name: '', email: '', phone: '' }
+                    : null,
             listing_id: inquiry?.listing_id ?? listings[0]?.id ?? '',
             contact_id: inquiry?.contact_id ?? contacts[0]?.id ?? '',
             status: inquiry?.status ?? 'New',
@@ -43,9 +57,16 @@ export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        transform((values) => {
+            const { new_contact, ...existing } = values;
+
+            return new_contact
+                ? { ...existing, contact_id: '', new_contact }
+                : existing;
+        });
 
         if (inquiry) {
-            post(inquiries.update.form.put(inquiry).action);
+            put(inquiries.update(inquiry).url);
 
             return;
         }
@@ -55,13 +76,13 @@ export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid gap-4 border-b border-[#C3C6D7]/70 bg-white px-4 py-5 md:grid-cols-3 md:px-6">
+            <div className="grid gap-4 border-b border-border bg-card px-4 py-5 md:grid-cols-3 md:px-6">
                 <Field label="Listing" error={errors.listing_id}>
                     <Select
                         value={data.listing_id}
                         onValueChange={(value) => setData('listing_id', value)}
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select listing" />
                         </SelectTrigger>
                         <SelectContent>
@@ -76,10 +97,11 @@ export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
 
                 <Field label="Contact" error={errors.contact_id}>
                     <Select
+                        disabled={processing || data.new_contact !== null}
                         value={data.contact_id}
                         onValueChange={(value) => setData('contact_id', value)}
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select contact" />
                         </SelectTrigger>
                         <SelectContent>
@@ -99,19 +121,41 @@ export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
                             setData('status', value as InquiryStatus)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                            {statuses.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {status}
-                                </SelectItem>
-                            ))}
+                            {statuses
+                                .filter((status) => inquiry || status === 'New')
+                                .map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                        {status}
+                                    </SelectItem>
+                                ))}
                         </SelectContent>
                     </Select>
                 </Field>
             </div>
+
+            {!inquiry && canCreateContact && (
+                <div className="px-6">
+                    <IntakeContactFields
+                        prefix="new_contact"
+                        value={data.new_contact}
+                        onChange={(value) => setData('new_contact', value)}
+                        errors={errors}
+                        disabled={processing}
+                    />
+                </div>
+            )}
+            {contacts.length === 0 && !data.new_contact && (
+                <p className="px-6 text-sm text-muted-foreground">
+                    No accessible contacts are available.
+                    {canCreateContact
+                        ? ' Create a new contact to continue.'
+                        : ' Ask an administrator to link a contact.'}
+                </p>
+            )}
 
             <div className="grid gap-4 px-4 md:grid-cols-3 md:px-6">
                 <Field label="Source" error={errors.source}>
@@ -144,7 +188,17 @@ export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
                 </Field>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
+            {inquiry && (
+                <LifecycleFields
+                    operation={data.operation}
+                    reason={data.reason}
+                    onOperation={(value) => setData('operation', value)}
+                    onReason={(value) => setData('reason', value)}
+                    errors={errors}
+                />
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-4 py-4 md:px-6">
                 <Button variant="outline" asChild>
                     <Link
                         href={
@@ -157,7 +211,12 @@ export function InquiryForm({ inquiry, listings, contacts }: InquiryFormProps) {
                         Cancel
                     </Link>
                 </Button>
-                <Button type="submit" disabled={processing}>
+                <Button
+                    type="submit"
+                    disabled={
+                        processing || (!data.new_contact && !data.contact_id)
+                    }
+                >
                     <Save />
                     {processing ? 'Saving' : 'Save inquiry'}
                 </Button>
@@ -180,7 +239,7 @@ function Field({
             <Label>{label}</Label>
             {children}
             {error && (
-                <p className="text-xs font-medium text-red-600">{error}</p>
+                <p className="text-xs font-medium text-destructive">{error}</p>
             )}
         </div>
     );

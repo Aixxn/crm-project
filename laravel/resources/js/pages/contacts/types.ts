@@ -2,6 +2,8 @@ export type ContactRole = 'Owner' | 'Buyer' | 'Tenant';
 
 export type ContactSummary = {
     id: string;
+    can_update?: boolean;
+    can_delete?: boolean;
     role: ContactRole;
     first_name: string;
     last_name: string | null;
@@ -75,4 +77,11 @@ export type PaginatedContacts = {
     from: number | null;
     to: number | null;
     total: number;
+};
+
+export type NewContactInput = {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
 };

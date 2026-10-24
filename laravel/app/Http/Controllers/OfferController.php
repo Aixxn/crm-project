@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Lifecycle\ChangeRecord;
 use App\Http\Requests\Offers\StoreOfferRequest;
 use App\Http\Requests\Offers\UpdateOfferRequest;
 use App\Models\Contact;
 use App\Models\Listing;
 use App\Models\Offer;
+use App\Services\OwnershipScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,13 +19,15 @@ use Inertia\Response;
 
 class OfferController extends Controller
 {
+    public function __construct(private OwnershipScope $ownershipScope) {}
+
     public function index(Request $request): JsonResponse|Response
     {
         Gate::authorize('viewAny', Offer::class);
 
-        $offers = Offer::query()
-            ->with(['listing:id,address,assigned_agent_id', 'contact:id,first_name,last_name,email,phone'])
-            ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->whereHas('listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id)))
+        $offers = $this->ownershipScope->scope($request->user(), Offer::query(), 'offer.read')
+            ->with(['listing' => $this->ownershipScope->readRelation($request->user()), 'contact' => $this->ownershipScope->readRelation($request->user())])
+
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('listing_id'), fn ($query) => $query->where('listing_id', $request->string('listing_id')->toString()))
             ->latest()
@@ -53,7 +57,7 @@ class OfferController extends Controller
 
     public function store(StoreOfferRequest $request): JsonResponse|RedirectResponse
     {
-        $offer = Offer::query()->create($request->validated());
+        $offer = app(ChangeRecord::class)->create($request->user(), new Offer, $request->validated());
 
         if ($request->expectsJson()) {
             return response()->json(['offer' => $offer], 201);
@@ -68,7 +72,7 @@ class OfferController extends Controller
     {
         Gate::authorize('view', $offer);
 
-        $offer->load(['listing', 'contact']);
+        $offer->load(['listing' => $this->ownershipScope->readRelation($request->user()), 'contact' => $this->ownershipScope->readRelation($request->user())]);
 
         if ($request->expectsJson()) {
             return response()->json(['offer' => $offer]);
@@ -90,7 +94,7 @@ class OfferController extends Controller
 
     public function update(UpdateOfferRequest $request, Offer $offer): JsonResponse|RedirectResponse
     {
-        $offer->update($request->validated());
+        $offer = app(ChangeRecord::class)->update($request->user(), $offer, $request->validated());
 
         if ($request->expectsJson()) {
             return response()->json(['offer' => $offer->refresh()]);
@@ -105,7 +109,7 @@ class OfferController extends Controller
     {
         Gate::authorize('delete', $offer);
 
-        $offer->delete();
+        app(ChangeRecord::class)->deleteOffer($request->user(), $offer);
 
         if ($request->expectsJson()) {
             return response()->json(status: 204);
@@ -121,9 +125,9 @@ class OfferController extends Controller
      */
     private function listingOptions(Request $request): Collection
     {
-        return Listing::query()
+        return $this->ownershipScope->scope($request->user(), Listing::query(), 'listing.read')
             ->select(['id', 'address', 'assigned_agent_id'])
-            ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
+
             ->orderBy('address')
             ->get();
     }
@@ -133,16 +137,9 @@ class OfferController extends Controller
      */
     private function contactOptions(Request $request): Collection
     {
-        return Contact::query()
+        return $this->ownershipScope->scope($request->user(), Contact::query(), 'contact.read')
             ->select(['id', 'first_name', 'last_name', 'email', 'phone'])
-            ->when(! $request->user()->hasRole('admin'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->whereHas('ownedListings', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('inquiries.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('viewings.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('offers.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id));
-                });
-            })
+
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();

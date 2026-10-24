@@ -1,5 +1,7 @@
 # Flexible RBAC + Ownership-Scoped Permissions - Design
 
+> Historical spec (May 2026). Read the [current architecture foundation](../../architecture.md) and [access decision](../../adr/0002-access-and-identity.md). The implemented User primary key and its references are integers, while CRM/role/permission IDs are UUIDs. The diagrams below are conceptual references, not the authoritative migration schema.
+
 ## Context
 We need a flexible RBAC model for the CRM MVP that distinguishes Admin and Agent roles and enforces ownership-scoped access for non-admins. This design should align with the listing-centric workflow in the CRM spec.
 

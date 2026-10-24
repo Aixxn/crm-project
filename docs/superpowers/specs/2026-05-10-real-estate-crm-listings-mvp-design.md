@@ -1,5 +1,7 @@
 # Real Estate CRM Listing Operations MVP - Design
 
+> Historical spec (May 2026). The [current architecture foundation](../../architecture.md) supersedes infrastructure, transport and scope statements where they differ. Public portal intake now exists; Redis is optional, and the application uses Inertia web routes. See the [roadmap](../../foundation-roadmap.md) for pending runtime changes.
+
 ## Context
 We are building a real estate CRM focused on property/listing operations. Tech stack: React + Tailwind for the frontend, Laravel for the backend, and Redis for sessions and rate limiting. This spec defines the MVP scope and components before implementation.
 

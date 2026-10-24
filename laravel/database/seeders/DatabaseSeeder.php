@@ -58,6 +58,13 @@ class DatabaseSeeder extends Seeder
 
         $user->assignRole($adminRole);
 
+        $agent = User::query()->updateOrCreate(
+            ['email' => 'agent@example.com'],
+            ['name' => 'Agent User', 'password' => 'password']
+        );
+
+        $agent->assignRole($agentRole);
+
         $this->call(BuyerPortalDemoSeeder::class);
     }
 

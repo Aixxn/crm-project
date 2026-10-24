@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
@@ -19,7 +21,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 
 #[Fillable(['contact_id', 'name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
@@ -62,6 +64,39 @@ class User extends Authenticatable implements PasskeyUser
     public function notes(): HasMany
     {
         return $this->hasMany(Note::class, 'author_id');
+    }
+
+    private const CRM_PERMISSION_PREFIXES = [
+        'listing.',
+        'contact.',
+        'inquiry.',
+        'viewing.',
+        'offer.',
+        'task.',
+        'note.',
+        'user.',
+    ];
+
+    public function hasCrmAccess(): bool
+    {
+        if ($this->hasRole('admin') || $this->hasRole('agent')) {
+            return true;
+        }
+
+        return $this->roles()
+            ->whereHas('permissions', function ($query): void {
+                $query->where(function ($query): void {
+                    foreach (self::CRM_PERMISSION_PREFIXES as $prefix) {
+                        $query->orWhere('key', 'like', $prefix.'%');
+                    }
+                });
+            })
+            ->exists();
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        DB::afterCommit(fn () => $this->notify(new VerifyEmail));
     }
 
     public function hasRole(string $roleKey): bool

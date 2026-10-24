@@ -14,7 +14,7 @@ class PublicSettingsController extends Controller
 
     public function edit(Request $request): Response
     {
-        $contact = $this->buyerPortalScope->ensureContact($request->user());
+        $contact = $this->buyerPortalScope->contact($request->user());
 
         return Inertia::render('public/settings', [
             'profile' => [
@@ -46,7 +46,7 @@ class PublicSettingsController extends Controller
             'phone' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $contact = $this->buyerPortalScope->ensureContact($request->user());
+        $contact = $this->buyerPortalScope->contact($request->user());
 
         $contact->update([
             'first_name' => $validated['first_name'],

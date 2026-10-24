@@ -51,7 +51,7 @@ class PublicListingController extends Controller
         }
 
         $savedListingIds = $request->user()
-            ? $request->user()->savedListings()->pluck('listing_id')->all()
+            ? $request->user()->savedListings()->whereHas('listing', fn ($query) => $query->published())->pluck('listing_id')->all()
             : [];
 
         return Inertia::render('public/browse', [
@@ -94,7 +94,7 @@ class PublicListingController extends Controller
 
     public function show(Listing $listing): Response
     {
-        abort_unless($this->isPublicListing($listing), 404);
+        abort_unless($listing->isPublished(), 404);
 
         $listing->load([
             'assignedAgent:id,name,email',
@@ -120,16 +120,7 @@ class PublicListingController extends Controller
     {
         return Listing::query()
             ->with(['assignedAgent:id,name,email', 'media' => fn ($query) => $query->orderBy('sort_order')])
-            ->whereIn('status', [
-                ListingStatus::Active->value,
-                ListingStatus::UnderOffer->value,
-            ]);
-    }
-
-    private function isPublicListing(Listing $listing): bool
-    {
-        return in_array($listing->status, [ListingStatus::Active, ListingStatus::UnderOffer], true)
-            && ! $listing->trashed();
+            ->published();
     }
 
     /**

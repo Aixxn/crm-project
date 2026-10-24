@@ -5,28 +5,24 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Contacts\StoreContactRequest;
 use App\Http\Requests\Contacts\UpdateContactRequest;
 use App\Models\Contact;
+use App\Services\OwnershipScope;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ContactController extends Controller
 {
+    public function __construct(private OwnershipScope $ownershipScope) {}
+
     public function index(Request $request): JsonResponse|Response
     {
         Gate::authorize('viewAny', Contact::class);
 
-        $contacts = Contact::query()
-            ->when(! $request->user()->hasRole('admin'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->whereHas('ownedListings', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('inquiries.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('viewings.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('offers.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id));
-                });
-            })
+        $contacts = $this->ownershipScope->scope($request->user(), Contact::query(), 'contact.read')
+
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
 
@@ -42,12 +38,15 @@ class ContactController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        $contacts->through(fn (Contact $contact) => $contact->setAttribute('can_update', $request->user()->can('update', $contact))->setAttribute('can_delete', $request->user()->can('delete', $contact)));
+
         if ($request->expectsJson()) {
-            return response()->json(['contacts' => $contacts]);
+            return response()->json(['contacts' => $contacts, 'canCreateContact' => $request->user()->can('create', Contact::class)]);
         }
 
         return Inertia::render('contacts/index', [
             'contacts' => $contacts,
+            'canCreateContact' => $request->user()->can('create', Contact::class),
             'filters' => $request->only(['search', 'role']),
         ]);
     }
@@ -72,11 +71,13 @@ class ContactController extends Controller
         return to_route('contacts.index');
     }
 
-    public function show(Request $request, Contact $contact): JsonResponse|Response
+    public function show(Request $request, Contact $contact, OwnershipScope $ownershipScope): JsonResponse|Response
     {
         Gate::authorize('view', $contact);
 
-        $contact->load(['ownedListings', 'inquiries.listing', 'viewings.listing', 'offers.listing']);
+        $ownershipScope->loadContactActivity($request->user(), $contact);
+        $contact->setAttribute('can_update', $request->user()->can('update', $contact));
+        $contact->setAttribute('can_delete', $request->user()->can('delete', $contact));
 
         if ($request->expectsJson()) {
             return response()->json(['contact' => $contact]);

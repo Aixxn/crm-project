@@ -19,9 +19,9 @@ class OfferCrudTest extends TestCase
 
     public function test_agent_can_create_offer_for_assigned_listing(): void
     {
-        $agent = $this->userWithPermissions(['offer.create']);
+        $agent = $this->userWithPermissions(['offer.create', 'contact.read']);
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
 
         $response = $this->actingAs($agent)->postJson(route('offers.store'), $this->payload($listing, $contact));
 
@@ -46,9 +46,9 @@ class OfferCrudTest extends TestCase
 
     public function test_agent_can_update_and_delete_assigned_listing_offer(): void
     {
-        $agent = $this->userWithPermissions(['offer.read', 'offer.update', 'offer.delete']);
-        $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $agent = $this->userWithPermissions(['offer.read', 'offer.update', 'offer.delete', 'contact.read']);
+        $listing = Listing::factory()->active()->create(['assigned_agent_id' => $agent->id]);
+        $contact = $listing->owner;
         $offer = Offer::factory()->create(['listing_id' => $listing->id, 'contact_id' => $contact->id]);
 
         $this->actingAs($agent)->getJson(route('offers.show', $offer))->assertOk();
@@ -61,6 +61,8 @@ class OfferCrudTest extends TestCase
             ->assertOk()
             ->assertJsonPath('offer.status', OfferStatus::Accepted->value);
 
+        $this->actingAs($agent)->deleteJson(route('offers.destroy', $offer))->assertUnprocessable();
+        $this->actingAs($agent)->putJson(route('offers.update', $offer), $this->payload($listing, $contact, ['status' => OfferStatus::Withdrawn->value]))->assertOk();
         $this->actingAs($agent)->deleteJson(route('offers.destroy', $offer))->assertNoContent();
 
         $this->assertSoftDeleted('offers', ['id' => $offer->id]);
@@ -68,7 +70,7 @@ class OfferCrudTest extends TestCase
 
     public function test_agent_cannot_create_offer_for_unassigned_listing(): void
     {
-        $agent = $this->userWithPermissions(['offer.create']);
+        $agent = $this->userWithPermissions(['offer.create', 'contact.read']);
         $listing = Listing::factory()->create();
         $contact = Contact::factory()->create();
 

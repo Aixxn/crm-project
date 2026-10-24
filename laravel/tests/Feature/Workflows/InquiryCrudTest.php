@@ -19,9 +19,9 @@ class InquiryCrudTest extends TestCase
 
     public function test_agent_can_create_inquiry_for_assigned_listing(): void
     {
-        $agent = $this->userWithPermissions(['inquiry.create']);
+        $agent = $this->userWithPermissions(['inquiry.create', 'contact.read']);
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
 
         $response = $this->actingAs($agent)->postJson(route('inquiries.store'), $this->payload($listing, $contact));
 
@@ -46,19 +46,19 @@ class InquiryCrudTest extends TestCase
 
     public function test_agent_can_update_and_delete_assigned_listing_inquiry(): void
     {
-        $agent = $this->userWithPermissions(['inquiry.read', 'inquiry.update', 'inquiry.delete']);
+        $agent = $this->userWithPermissions(['inquiry.read', 'inquiry.update', 'inquiry.delete', 'contact.read']);
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
-        $contact = Contact::factory()->create();
+        $contact = $listing->owner;
         $inquiry = Inquiry::factory()->create(['listing_id' => $listing->id, 'contact_id' => $contact->id]);
 
         $this->actingAs($agent)->getJson(route('inquiries.show', $inquiry))->assertOk();
 
         $this->actingAs($agent)
             ->putJson(route('inquiries.update', $inquiry), $this->payload($listing, $contact, [
-                'status' => InquiryStatus::Qualified->value,
+                'status' => InquiryStatus::Contacted->value,
             ]))
             ->assertOk()
-            ->assertJsonPath('inquiry.status', InquiryStatus::Qualified->value);
+            ->assertJsonPath('inquiry.status', InquiryStatus::Contacted->value);
 
         $this->actingAs($agent)->deleteJson(route('inquiries.destroy', $inquiry))->assertNoContent();
 
@@ -67,9 +67,10 @@ class InquiryCrudTest extends TestCase
 
     public function test_agent_cannot_create_inquiry_for_unassigned_listing(): void
     {
-        $agent = $this->userWithPermissions(['inquiry.create']);
+        $agent = $this->userWithPermissions(['inquiry.create', 'contact.read']);
         $listing = Listing::factory()->create();
-        $contact = Contact::factory()->create();
+        $ownListing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
+        $contact = $ownListing->owner;
 
         $this->actingAs($agent)
             ->postJson(route('inquiries.store'), $this->payload($listing, $contact))

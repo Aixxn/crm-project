@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { agencyDatetimeToIso } from '@/lib/agency-time';
 import type { User } from '@/types';
 import { PublicNotificationBell } from './_components/public-notification-bell';
 import { PublicUserMenu } from './_components/public-user-menu';
@@ -344,6 +345,7 @@ function ContactCard({
         message: `I would like more information about ${listing.address}.`,
     });
     const viewingForm = useForm({
+        intent: 'buy',
         preferred_date: '',
         preferred_time: '',
         scheduled_at: '',
@@ -383,7 +385,8 @@ function ContactCard({
                 : '';
 
         viewingForm.transform((data) => ({
-            scheduled_at: scheduledAt || data.scheduled_at,
+            intent: data.intent,
+            scheduled_at: agencyDatetimeToIso(scheduledAt || data.scheduled_at),
         }));
 
         viewingForm.post(requestViewingUrl, {
@@ -400,8 +403,11 @@ function ContactCard({
     const selectedViewingLabel =
         viewingForm.data.preferred_date && viewingForm.data.preferred_time
             ? new Date(
-                  `${viewingForm.data.preferred_date}T${viewingForm.data.preferred_time}`,
-              ).toLocaleString([], {
+                  agencyDatetimeToIso(
+                      `${viewingForm.data.preferred_date}T${viewingForm.data.preferred_time}`,
+                  ),
+              ).toLocaleString('en-PH', {
+                  timeZone: 'Asia/Manila',
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric',
@@ -445,6 +451,26 @@ function ContactCard({
                 </div>
             ) : (
                 <form className="mt-5 grid gap-3" onSubmit={submitViewing}>
+                    <label className="grid gap-1.5 text-sm font-medium text-foreground">
+                        Viewing intent
+                        <select
+                            value={viewingForm.data.intent}
+                            onChange={(event) =>
+                                viewingForm.setData(
+                                    'intent',
+                                    event.target.value,
+                                )
+                            }
+                            className="h-11 rounded-md border border-input bg-background px-3 text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <option value="buy">Buy</option>
+                            <option value="rent">Rent</option>
+                        </select>
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                        Choose your preferred time in Asia/Manila. The agent
+                        will confirm availability.
+                    </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <label className="grid gap-1.5 text-xs font-semibold text-[#5F6373]">
                             Preferred date

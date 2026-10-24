@@ -7,6 +7,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Enums\ContactRole;
 use App\Models\Contact;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -26,24 +27,26 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        $user = User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => $input['password'],
-        ]);
+        return DB::transaction(function () use ($input): User {
+            $user = User::create([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => $input['password'],
+            ]);
 
-        [$firstName, $lastName] = $this->splitName($input['name']);
+            [$firstName, $lastName] = $this->splitName($input['name']);
 
-        $contact = Contact::create([
-            'role' => ContactRole::Buyer,
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $input['email'],
-        ]);
+            $contact = Contact::create([
+                'role' => ContactRole::Buyer,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $input['email'],
+            ]);
 
-        $user->forceFill(['contact_id' => $contact->getKey()])->save();
+            $user->forceFill(['contact_id' => $contact->getKey()])->save();
 
-        return $user;
+            return $user;
+        });
     }
 
     /**

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Lifecycle\ChangeRecord;
 use App\Http\Requests\Viewings\StoreViewingRequest;
 use App\Http\Requests\Viewings\UpdateViewingRequest;
 use App\Models\Contact;
 use App\Models\Listing;
 use App\Models\User;
 use App\Models\Viewing;
+use App\Services\OwnershipScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,13 +20,15 @@ use Inertia\Response;
 
 class ViewingController extends Controller
 {
+    public function __construct(private OwnershipScope $ownershipScope) {}
+
     public function index(Request $request): JsonResponse|Response
     {
         Gate::authorize('viewAny', Viewing::class);
 
-        $viewings = Viewing::query()
-            ->with(['listing:id,address,assigned_agent_id', 'contact:id,first_name,last_name,email,phone', 'agent:id,name,email'])
-            ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->whereHas('listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id)))
+        $viewings = $this->ownershipScope->scope($request->user(), Viewing::query(), 'viewing.read')
+            ->with(['listing' => $this->ownershipScope->readRelation($request->user()), 'contact' => $this->ownershipScope->readRelation($request->user()), 'agent:id,name,email'])
+
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('listing_id'), fn ($query) => $query->where('listing_id', $request->string('listing_id')->toString()))
             ->orderBy('scheduled_at')
@@ -55,7 +59,7 @@ class ViewingController extends Controller
 
     public function store(StoreViewingRequest $request): JsonResponse|RedirectResponse
     {
-        $viewing = Viewing::query()->create($request->validated());
+        $viewing = app(ChangeRecord::class)->create($request->user(), new Viewing, $request->validated());
 
         if ($request->expectsJson()) {
             return response()->json(['viewing' => $viewing], 201);
@@ -70,7 +74,7 @@ class ViewingController extends Controller
     {
         Gate::authorize('view', $viewing);
 
-        $viewing->load(['listing', 'contact', 'agent:id,name,email']);
+        $viewing->load(['listing' => $this->ownershipScope->readRelation($request->user()), 'contact' => $this->ownershipScope->readRelation($request->user()), 'agent:id,name,email']);
 
         if ($request->expectsJson()) {
             return response()->json(['viewing' => $viewing]);
@@ -93,7 +97,7 @@ class ViewingController extends Controller
 
     public function update(UpdateViewingRequest $request, Viewing $viewing): JsonResponse|RedirectResponse
     {
-        $viewing->update($request->validated());
+        $viewing = app(ChangeRecord::class)->update($request->user(), $viewing, $request->validated());
 
         if ($request->expectsJson()) {
             return response()->json(['viewing' => $viewing->refresh()]);
@@ -124,9 +128,9 @@ class ViewingController extends Controller
      */
     private function listingOptions(Request $request): Collection
     {
-        return Listing::query()
+        return $this->ownershipScope->scope($request->user(), Listing::query(), 'listing.read')
             ->select(['id', 'address', 'assigned_agent_id'])
-            ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
+
             ->orderBy('address')
             ->get();
     }
@@ -136,16 +140,9 @@ class ViewingController extends Controller
      */
     private function contactOptions(Request $request): Collection
     {
-        return Contact::query()
+        return $this->ownershipScope->scope($request->user(), Contact::query(), 'contact.read')
             ->select(['id', 'first_name', 'last_name', 'email', 'phone'])
-            ->when(! $request->user()->hasRole('admin'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->whereHas('ownedListings', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('inquiries.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('viewings.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id))
-                        ->orWhereHas('offers.listing', fn ($query) => $query->where('assigned_agent_id', $request->user()->id));
-                });
-            })
+
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
@@ -160,6 +157,8 @@ class ViewingController extends Controller
             ->select(['id', 'name', 'email'])
             ->when(! $request->user()->hasRole('admin'), fn ($query) => $query->whereKey($request->user()->id))
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->filter(fn (User $user) => $user->hasCrmAccess())
+            ->values();
     }
 }

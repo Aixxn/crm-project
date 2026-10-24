@@ -7,6 +7,7 @@ use App\Models\Contact;
 use App\Models\Inquiry;
 use App\Models\Listing;
 use App\Models\Offer;
+use App\Models\User;
 use App\Services\OwnershipScope;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,6 +31,8 @@ class UpdateTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'reason' => ['nullable', 'string', 'max:2000'],
+            'operation' => ['sometimes', 'string', Rule::in(['transition', 'correct', 'reopen'])],
             'assignee_id' => ['required', 'integer', 'exists:users,id'],
             'title' => ['required', 'string', 'max:255'],
             'due_date' => ['nullable', 'date'],
@@ -42,6 +45,14 @@ class UpdateTaskRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $assignee = User::query()->find($this->input('assignee_id'));
+            if (! $assignee || ! $assignee->hasCrmAccess()) {
+                $validator->errors()->add('assignee_id', 'The selected assignee is not eligible CRM staff.');
+            }
             $relatedEntity = $this->relatedEntity();
 
             if (! $relatedEntity) {
@@ -65,22 +76,11 @@ class UpdateTaskRequest extends FormRequest
      */
     private function allowedRelatedEntityTypes(): array
     {
-        return [
-            Listing::class,
-            Inquiry::class,
-            Contact::class,
-            Offer::class,
-        ];
+        return OwnershipScope::PARENTS;
     }
 
     private function relatedEntity(): Contact|Inquiry|Listing|Offer|null
     {
-        $type = $this->string('related_entity_type')->toString();
-
-        if (! in_array($type, $this->allowedRelatedEntityTypes(), true)) {
-            return null;
-        }
-
-        return $type::query()->find($this->input('related_entity_id'));
+        return app(OwnershipScope::class)->resolveParent($this->string('related_entity_type')->toString(), $this->string('related_entity_id')->toString());
     }
 }

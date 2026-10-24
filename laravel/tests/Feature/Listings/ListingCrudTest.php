@@ -27,7 +27,7 @@ class ListingCrudTest extends TestCase
     public function test_admin_can_create_listing_for_any_agent(): void
     {
         $admin = $this->userWithRoleAndPermissions('admin');
-        $agent = User::factory()->create();
+        $agent = $this->userWithRoleAndPermissions('agent');
         $owner = Contact::factory()->create(['role' => ContactRole::Owner]);
 
         $response = $this->actingAs($admin)->postJson(route('listings.store'), $this->payload([
@@ -47,11 +47,13 @@ class ListingCrudTest extends TestCase
 
     public function test_agent_can_create_listing_only_for_self(): void
     {
-        $agent = $this->userWithRoleAndPermissions('agent', ['listing.create']);
+        $agent = $this->userWithRoleAndPermissions('agent', ['listing.create', 'contact.read']);
         $otherAgent = User::factory()->create();
+        $existing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
 
         $allowed = $this->actingAs($agent)->postJson(route('listings.store'), $this->payload([
             'assigned_agent_id' => $agent->id,
+            'owner_contact_id' => $existing->owner_contact_id,
         ]));
 
         $allowed->assertCreated();
@@ -77,12 +79,31 @@ class ListingCrudTest extends TestCase
             ->assertJsonMissing(['id' => $otherListing->id]);
     }
 
+    public function test_admin_cannot_assign_listing_to_a_portal_account(): void
+    {
+        $admin = $this->userWithRoleAndPermissions('admin');
+        $portal = User::factory()->create();
+        $listing = Listing::factory()->create(['assigned_agent_id' => $admin->id]);
+        $payload = $this->payload([
+            'assigned_agent_id' => $portal->id,
+            'owner_contact_id' => $listing->owner_contact_id,
+        ]);
+
+        $this->actingAs($admin)->postJson(route('listings.store'), $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors('assigned_agent_id');
+        $this->putJson(route('listings.update', $listing), $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors('assigned_agent_id');
+        $this->assertDatabaseHas('listings', ['id' => $listing->id, 'assigned_agent_id' => $admin->id]);
+        $this->assertDatabaseCount('listings', 1);
+    }
+
     public function test_agent_can_view_update_and_delete_assigned_listing(): void
     {
         $agent = $this->userWithRoleAndPermissions('agent', [
             'listing.read',
             'listing.update',
             'listing.delete',
+            'contact.read',
         ]);
         $listing = Listing::factory()->create(['assigned_agent_id' => $agent->id]);
 
@@ -91,6 +112,7 @@ class ListingCrudTest extends TestCase
         $this->actingAs($agent)
             ->putJson(route('listings.update', $listing), $this->payload([
                 'assigned_agent_id' => $agent->id,
+                'owner_contact_id' => $listing->owner_contact_id,
                 'address' => '456 Updated Avenue',
             ]))
             ->assertOk()
@@ -138,7 +160,7 @@ class ListingCrudTest extends TestCase
         Storage::fake('public');
 
         $admin = $this->userWithRoleAndPermissions('admin');
-        $agent = User::factory()->create();
+        $agent = $this->userWithRoleAndPermissions('agent');
         $owner = Contact::factory()->create(['role' => ContactRole::Owner]);
 
         $this->actingAs($admin)
@@ -198,6 +220,7 @@ class ListingCrudTest extends TestCase
     {
         $admin = $this->userWithRoleAndPermissions('admin');
         $agent = User::factory()->create(['name' => 'Agent A']);
+        $agent->assignRole(Role::factory()->create(['key' => 'agent']));
         $owner = Contact::factory()->create(['role' => ContactRole::Owner]);
 
         $this->actingAs($admin)
@@ -265,7 +288,7 @@ class ListingCrudTest extends TestCase
         return array_merge([
             'assigned_agent_id' => User::factory()->create()->id,
             'owner_contact_id' => Contact::factory()->create(['role' => ContactRole::Owner])->id,
-            'status' => ListingStatus::Active->value,
+            'status' => ListingStatus::Draft->value,
             'address' => '123 Main Street',
             'property_type' => 'Condo',
             'price' => 750000,

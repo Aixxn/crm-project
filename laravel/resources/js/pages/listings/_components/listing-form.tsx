@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, ImagePlus, Save, X } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
+import { LifecycleFields } from '@/components/lifecycle-fields';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import listings from '@/routes/listings';
+import { IntakeContactFields } from '../../contacts/_components/intake-contact-fields';
 import type {
     AgentSummary,
     ContactSummary,
@@ -29,15 +31,27 @@ const listingStatuses: ListingStatus[] = [
 ];
 
 type ListingFormProps = {
+    canCreateContact?: boolean;
     agents: AgentSummary[];
     owners: ContactSummary[];
     listing?: ListingSummary;
 };
 
-export function ListingForm({ agents, owners, listing }: ListingFormProps) {
+export function ListingForm({
+    canCreateContact = false,
+    agents,
+    owners,
+    listing,
+}: ListingFormProps) {
     const isEditing = Boolean(listing);
-    const { data, setData, post, processing, errors } =
+    const { data, setData, post, put, transform, processing, errors } =
         useForm<ListingFormData>({
+            operation: 'transition',
+            reason: '',
+            new_owner:
+                !listing && canCreateContact && owners.length === 0
+                    ? { first_name: '', last_name: '', email: '', phone: '' }
+                    : null,
             assigned_agent_id:
                 listing?.assigned_agent_id.toString() ??
                 agents[0]?.id.toString() ??
@@ -55,9 +69,16 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        transform((values) => {
+            const { new_owner, ...existing } = values;
+
+            return new_owner
+                ? { ...existing, owner_contact_id: '', new_owner }
+                : existing;
+        });
 
         if (listing) {
-            post(listings.update.form.put(listing).action);
+            put(listings.update(listing).url);
 
             return;
         }
@@ -84,7 +105,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid gap-4 border-b border-[#c4c8d9] bg-white px-6 py-5 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 border-b border-border bg-card px-6 py-5 md:grid-cols-2 lg:grid-cols-4">
                 <Field label="Status" error={errors.status}>
                     <Select
                         value={data.status}
@@ -92,15 +113,19 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                             setData('status', value as ListingStatus)
                         }
                     >
-                        <SelectTrigger className="w-full border-[#c4c8d9] bg-white">
+                        <SelectTrigger className="w-full border-border bg-card">
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                            {listingStatuses.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {status}
-                                </SelectItem>
-                            ))}
+                            {listingStatuses
+                                .filter(
+                                    (status) => listing || status === 'Draft',
+                                )
+                                .map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                        {status}
+                                    </SelectItem>
+                                ))}
                         </SelectContent>
                     </Select>
                 </Field>
@@ -112,7 +137,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                             setData('assigned_agent_id', value)
                         }
                     >
-                        <SelectTrigger className="w-full border-[#c4c8d9] bg-white">
+                        <SelectTrigger className="w-full border-border bg-card">
                             <SelectValue placeholder="Select agent" />
                         </SelectTrigger>
                         <SelectContent>
@@ -130,12 +155,13 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                 <Field label="Owner contact" error={errors.owner_contact_id}>
                     <Select
+                        disabled={processing || data.new_owner !== null}
                         value={data.owner_contact_id}
                         onValueChange={(value) =>
                             setData('owner_contact_id', value)
                         }
                     >
-                        <SelectTrigger className="w-full border-[#c4c8d9] bg-white">
+                        <SelectTrigger className="w-full border-border bg-card">
                             <SelectValue placeholder="Select owner" />
                         </SelectTrigger>
                         <SelectContent>
@@ -150,7 +176,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                 <Field label="Property type" error={errors.property_type}>
                     <Input
-                        className="border-[#c4c8d9] bg-white"
+                        className="border-border bg-card"
                         value={data.property_type}
                         onChange={(event) =>
                             setData('property_type', event.target.value)
@@ -160,11 +186,31 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                 </Field>
             </div>
 
+            {!listing && canCreateContact && (
+                <div className="px-6">
+                    <IntakeContactFields
+                        prefix="new_owner"
+                        value={data.new_owner}
+                        onChange={(value) => setData('new_owner', value)}
+                        errors={errors}
+                        disabled={processing}
+                    />
+                </div>
+            )}
+            {owners.length === 0 && !data.new_owner && (
+                <p className="px-6 text-sm text-muted-foreground">
+                    No accessible contacts are available.
+                    {canCreateContact
+                        ? ' Create a new contact to continue.'
+                        : ' Ask an administrator to link a contact.'}
+                </p>
+            )}
+
             <div className="grid gap-5 px-6 md:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="space-y-4">
                     <Field label="Address" error={errors.address}>
                         <Input
-                            className="border-[#c4c8d9] bg-white"
+                            className="border-border bg-card"
                             value={data.address}
                             onChange={(event) =>
                                 setData('address', event.target.value)
@@ -176,7 +222,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <Field label="Price" error={errors.price}>
                             <Input
-                                className="border-[#c4c8d9] bg-white"
+                                className="border-border bg-card"
                                 type="number"
                                 min="0"
                                 step="0.01"
@@ -189,7 +235,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                         <Field label="Bedrooms" error={errors.bedrooms}>
                             <Input
-                                className="border-[#c4c8d9] bg-white"
+                                className="border-border bg-card"
                                 type="number"
                                 min="0"
                                 value={data.bedrooms}
@@ -201,7 +247,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                         <Field label="Bathrooms" error={errors.bathrooms}>
                             <Input
-                                className="border-[#c4c8d9] bg-white"
+                                className="border-border bg-card"
                                 type="number"
                                 min="0"
                                 step="0.5"
@@ -214,7 +260,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                         <Field label="Area sqft" error={errors.area_sqft}>
                             <Input
-                                className="border-[#c4c8d9] bg-white"
+                                className="border-border bg-card"
                                 type="number"
                                 min="0"
                                 value={data.area_sqft}
@@ -227,7 +273,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
 
                     {!isEditing && (
                         <Field label="Listing images" error={errors.images}>
-                            <div className="rounded-md border border-dashed border-[#c4c8d9] bg-white p-4">
+                            <div className="rounded-md border border-dashed border-border bg-card p-4">
                                 <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-sm bg-[#eef1fb] px-4 text-center text-sm text-[#596071] hover:bg-[#e5e9f7]">
                                     <ImagePlus className="mb-3 size-8 text-blue-700" />
                                     <span className="font-medium text-[#1f2330]">
@@ -251,7 +297,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                                         {data.images.map((image, index) => (
                                             <div
                                                 key={`${image.name}-${index}`}
-                                                className="flex items-center justify-between gap-2 rounded-sm border border-[#c4c8d9] px-3 py-2 text-sm text-[#303545]"
+                                                className="flex items-center justify-between gap-2 rounded-sm border border-border px-3 py-2 text-sm text-[#303545]"
                                             >
                                                 <span className="truncate">
                                                     {image.name}
@@ -261,7 +307,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                                                     onClick={() =>
                                                         removeImage(index)
                                                     }
-                                                    className="text-[#596071] hover:text-red-600"
+                                                    className="text-[#596071] hover:text-destructive"
                                                     aria-label={`Remove ${image.name}`}
                                                 >
                                                     <X className="size-4" />
@@ -279,7 +325,7 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                     )}
                 </div>
 
-                <div className="rounded-md border border-[#c4c8d9] bg-white p-4">
+                <div className="rounded-md border border-border bg-card p-4">
                     <div className="text-sm font-semibold text-[#1f2330]">
                         Listing setup
                     </div>
@@ -306,11 +352,21 @@ export function ListingForm({ agents, owners, listing }: ListingFormProps) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#c4c8d9] bg-[#f7f5fc] px-6 py-4">
+            {listing && (
+                <LifecycleFields
+                    operation={data.operation}
+                    reason={data.reason}
+                    onOperation={(value) => setData('operation', value)}
+                    onReason={(value) => setData('reason', value)}
+                    errors={errors}
+                />
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-[#f7f5fc] px-6 py-4">
                 <Button
                     variant="outline"
                     asChild
-                    className="rounded-sm border-[#c4c8d9] bg-white text-[#303545] hover:bg-[#eef1fb]"
+                    className="rounded-sm border-border bg-card text-[#303545] hover:bg-[#eef1fb]"
                 >
                     <Link
                         href={
@@ -350,7 +406,7 @@ function Field({
             </Label>
             {children}
             {error && (
-                <p className="text-xs font-medium text-red-600">{error}</p>
+                <p className="text-xs font-medium text-destructive">{error}</p>
             )}
         </div>
     );
