@@ -21,8 +21,8 @@ export default function ViewingShow({ viewing }: ViewingShowProps) {
     return (
         <>
             <Head title="Viewing detail" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <Button
@@ -37,12 +37,15 @@ export default function ViewingShow({ viewing }: ViewingShowProps) {
                                 </Link>
                             </Button>
                             <div className="flex flex-wrap items-center gap-3">
-                                <h1 className="text-xl font-semibold text-neutral-950">
+                                <h1 className="text-xl font-semibold text-foreground">
                                     {formatDateTime(viewing.scheduled_at)}
                                 </h1>
-                                <StatusBadge status={viewing.status} />
+                                <StatusBadge
+                                    domain="viewing"
+                                    status={viewing.status}
+                                />
                             </div>
-                            <p className="mt-2 text-sm text-neutral-600">
+                            <p className="mt-2 text-sm text-muted-foreground">
                                 {viewing.agent?.name ?? 'Unassigned'}
                             </p>
                         </div>
@@ -105,9 +108,9 @@ ViewingShow.layout = {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <section className="rounded-md border border-[#C3C6D7] bg-white p-4 text-sm">
-            <h2 className="mb-3 font-semibold text-neutral-950">{title}</h2>
-            <div className="text-neutral-700">{children}</div>
+        <section className="rounded-md border border-border bg-card p-4 text-sm">
+            <h2 className="mb-3 font-semibold text-foreground">{title}</h2>
+            <div className="text-foreground">{children}</div>
         </section>
     );
 }

@@ -1,5 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckSquare, Eye, Pencil, Plus, SlidersHorizontal } from 'lucide-react';
+import {
+    CheckSquare,
+    Eye,
+    Pencil,
+    Plus,
+    SlidersHorizontal,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,7 +38,12 @@ type TaskIndexProps = {
     relatedEntities: RelatedEntityOption[];
 };
 
-const statuses: Array<TaskStatus | 'All'> = ['All', 'Open', 'In Progress', 'Done'];
+const statuses: Array<TaskStatus | 'All'> = [
+    'All',
+    'Open',
+    'In Progress',
+    'Done',
+];
 
 export default function TaskIndex({
     tasks: paginated,
@@ -48,7 +59,9 @@ export default function TaskIndex({
         filters.related_entity_type ?? 'All',
     );
     const relatedKinds = Array.from(
-        new Map(relatedEntities.map((item) => [item.type, item.kind])).entries(),
+        new Map(
+            relatedEntities.map((item) => [item.type, item.kind]),
+        ).entries(),
     );
     const applyFilters = () =>
         router.get(
@@ -65,15 +78,16 @@ export default function TaskIndex({
     return (
         <>
             <Head title="Tasks" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
+                            <h1 className="text-xl font-semibold text-foreground">
                                 Tasks
                             </h1>
-                            <p className="mt-1 text-sm text-neutral-600">
-                                {paginated.total} action items linked to CRM records.
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {paginated.total} action items linked to CRM
+                                records.
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -90,10 +104,10 @@ export default function TaskIndex({
                     </div>
                 </div>
                 <div className="p-4 md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white">
-                        <div className="grid gap-3 border-b border-[#C3C6D7]/70 p-3 md:grid-cols-[11rem_12rem_minmax(0,1fr)_auto]">
+                    <section className="rounded-md border border-border bg-card">
+                        <div className="grid gap-3 border-b border-border/70 p-3 md:grid-cols-[11rem_12rem_minmax(0,1fr)_auto]">
                             <Select value={status} onValueChange={setStatus}>
-                                <SelectTrigger className="w-full bg-white">
+                                <SelectTrigger className="w-full bg-card">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -108,7 +122,7 @@ export default function TaskIndex({
                                 value={assigneeId}
                                 onValueChange={setAssigneeId}
                             >
-                                <SelectTrigger className="w-full bg-white">
+                                <SelectTrigger className="w-full bg-card">
                                     <SelectValue placeholder="Assignee" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -129,7 +143,7 @@ export default function TaskIndex({
                                 value={relatedType}
                                 onValueChange={setRelatedType}
                             >
-                                <SelectTrigger className="w-full bg-white">
+                                <SelectTrigger className="w-full bg-card">
                                     <SelectValue placeholder="Related type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -150,7 +164,7 @@ export default function TaskIndex({
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[880px] text-left text-sm">
-                                <thead className="bg-neutral-50 text-xs font-medium text-neutral-500 uppercase">
+                                <thead className="bg-muted text-xs font-medium text-muted-foreground uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Task</th>
                                         <th className="px-4 py-3">Status</th>
@@ -162,45 +176,55 @@ export default function TaskIndex({
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#C3C6D7]/60">
+                                <tbody className="divide-y divide-border/60">
                                     {paginated.data.map((task) => (
                                         <tr
                                             key={task.id}
-                                            className="bg-white hover:bg-[#FAF8FF]"
+                                            className="bg-card hover:bg-muted"
                                         >
                                             <td className="px-4 py-4">
                                                 <div className="flex gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#C3C6D7] bg-[#FAF8FF]">
-                                                        <CheckSquare className="size-4 text-neutral-700" />
+                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
+                                                        <CheckSquare className="size-4 text-foreground" />
                                                     </div>
                                                     <div>
                                                         <Link
                                                             href={`/tasks/${task.id}`}
-                                                            className="font-medium text-neutral-950 hover:underline"
+                                                            className="font-medium text-foreground hover:underline"
                                                         >
                                                             {task.title}
                                                         </Link>
-                                                        <div className="mt-1 text-xs text-neutral-500">
-                                                            Created {formatDate(task.created_at)}
+                                                        <div className="mt-1 text-xs text-muted-foreground">
+                                                            Created{' '}
+                                                            {formatDate(
+                                                                task.created_at,
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4">
-                                                <StatusBadge status={task.status} />
+                                                <StatusBadge
+                                                    domain="task"
+                                                    status={task.status}
+                                                />
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
-                                                {task.due_date ? formatDate(task.due_date) : '-'}
+                                            <td className="px-4 py-4 text-foreground">
+                                                {task.due_date
+                                                    ? formatDate(task.due_date)
+                                                    : '-'}
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
+                                            <td className="px-4 py-4 text-foreground">
                                                 {task.assignee?.name ?? '-'}
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="space-y-1">
                                                     <Badge variant="outline">
-                                                        {relatedEntityKind(task.related_entity_type)}
+                                                        {relatedEntityKind(
+                                                            task.related_entity_type,
+                                                        )}
                                                     </Badge>
-                                                    <div className="text-neutral-700">
+                                                    <div className="text-foreground">
                                                         {relatedEntityLabel(
                                                             task.related_entity_type,
                                                             task.related_entity_id,
@@ -218,7 +242,9 @@ export default function TaskIndex({
                                                         asChild
                                                         aria-label="View task"
                                                     >
-                                                        <Link href={`/tasks/${task.id}`}>
+                                                        <Link
+                                                            href={`/tasks/${task.id}`}
+                                                        >
                                                             <Eye />
                                                         </Link>
                                                     </Button>
@@ -228,7 +254,9 @@ export default function TaskIndex({
                                                         asChild
                                                         aria-label="Edit task"
                                                     >
-                                                        <Link href={`/tasks/${task.id}/edit`}>
+                                                        <Link
+                                                            href={`/tasks/${task.id}/edit`}
+                                                        >
                                                             <Pencil />
                                                         </Link>
                                                     </Button>
@@ -240,7 +268,7 @@ export default function TaskIndex({
                             </table>
                         </div>
                         {paginated.data.length === 0 && (
-                            <div className="px-4 py-14 text-center text-sm text-neutral-600">
+                            <div className="px-4 py-14 text-center text-sm text-muted-foreground">
                                 No tasks match the current filters.
                             </div>
                         )}

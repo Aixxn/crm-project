@@ -1,17 +1,12 @@
 import type { LifecycleOperation } from '@/types/lifecycle';
+import type { InquiryStatus } from '@/types/workflow';
+export type { InquiryStatus };
 import type { NewContactInput } from '../contacts/types';
 import type {
     ContactOption,
     ListingOption,
     Paginated,
 } from '../workflow-support';
-
-export type InquiryStatus =
-    | 'New'
-    | 'Contacted'
-    | 'Qualified'
-    | 'Converted'
-    | 'Closed';
 
 export type InquirySummary = {
     id: string;

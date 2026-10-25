@@ -18,12 +18,12 @@ export default function EditListing({
     return (
         <>
             <Head title="Edit listing" />
-            <main className="min-h-full bg-[#f7f5fc] text-[#1f2330]">
-                <div className="border-b border-[#c4c8d9] bg-white px-6 py-5">
+            <main className="min-h-full bg-background text-foreground">
+                <div className="border-b border-border bg-card px-6 py-5">
                     <h1 className="text-2xl font-semibold tracking-tight">
                         Edit listing
                     </h1>
-                    <p className="mt-2 text-sm text-[#596071]">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {listing.address}
                     </p>
                 </div>

@@ -2,9 +2,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Bath,
     BedDouble,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     ImageIcon,
     ListFilter,
     MapPin,
@@ -14,7 +11,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { EmptyState } from '@/components/empty-state';
+import { Pagination } from '@/components/pagination';
+import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
+import { money } from '@/lib/format';
 import { dashboard } from '@/routes';
 import listings from '@/routes/listings';
 import type {
@@ -71,29 +72,32 @@ export default function ListingIndex({
     return (
         <>
             <Head title="Properties" />
-            <main className="min-h-full bg-[#f7f5fc] text-[#1f2330]">
+            <main className="min-h-full bg-background text-foreground">
                 <section className="px-6 py-7">
                     <div className="flex flex-wrap items-end justify-between gap-4">
                         <div>
                             <h1 className="text-3xl font-semibold tracking-tight">
                                 Properties
                             </h1>
-                            <p className="mt-2 text-sm text-[#596071]">
+                            <p className="mt-2 text-sm text-muted-foreground">
                                 Manage and track your active inventory
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
-                            <div className="inline-flex rounded-sm border border-[#c4c8d9] bg-white p-1 text-sm">
-                                <button className="h-9 rounded-sm bg-[#eef1fb] px-4 font-semibold">
+                            <div className="inline-flex rounded-sm border border-border bg-card p-1 text-sm">
+                                <span
+                                    className="inline-flex h-9 items-center rounded-sm bg-muted px-4 font-semibold"
+                                    aria-current="page"
+                                >
                                     List
-                                </button>
-                                <button className="h-9 px-4 font-medium text-[#4f5668]">
-                                    Map
-                                </button>
+                                </span>
+                                <span className="inline-flex h-9 items-center px-4 font-medium text-muted-foreground">
+                                    Map unavailable
+                                </span>
                             </div>
                             <Button
                                 asChild
-                                className="h-10 rounded-sm bg-blue-700 px-5 text-white hover:bg-blue-800"
+                                className="h-10 rounded-sm bg-primary px-5 text-primary-foreground hover:bg-primary/90"
                             >
                                 <Link href={listings.create()}>
                                     <Plus className="size-4" />
@@ -103,8 +107,8 @@ export default function ListingIndex({
                         </div>
                     </div>
 
-                    <div className="mt-5 flex flex-wrap items-center gap-4 rounded-sm border border-[#c4c8d9] bg-white px-4 py-3 text-sm text-[#4f5668]">
-                        <div className="flex items-center gap-2 font-medium uppercase tracking-wide">
+                    <div className="mt-5 flex flex-wrap items-center gap-4 rounded-sm border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 font-medium tracking-wide uppercase">
                             <ListFilter className="size-4" />
                             Filters
                         </div>
@@ -113,10 +117,22 @@ export default function ListingIndex({
                             <span>Status:</span>
                             <select
                                 value={status}
-                                onChange={(event) =>
-                                    setStatus(event.target.value)
-                                }
-                                className="bg-transparent font-medium text-[#202432] outline-none"
+                                onChange={(event) => {
+                                    const value = event.target.value;
+                                    setStatus(value);
+                                    router.get(
+                                        listings.index().url,
+                                        {
+                                            search: search || undefined,
+                                            status:
+                                                value === 'All Active'
+                                                    ? undefined
+                                                    : value,
+                                        },
+                                        { preserveState: true, replace: true },
+                                    );
+                                }}
+                                className="rounded-sm bg-transparent font-medium text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                             >
                                 {statuses.map((item) => (
                                     <option key={item} value={item}>
@@ -124,18 +140,17 @@ export default function ListingIndex({
                                     </option>
                                 ))}
                             </select>
-                            <ChevronDown className="size-4" />
                         </label>
                         <Divider />
-                        <button className="flex items-center gap-2">
+                        <span className="flex items-center gap-2">
                             <span>Price: Any</span>
-                            <ChevronDown className="size-4" />
-                        </button>
+                        </span>
                         <Divider />
                         <label className="flex min-w-60 flex-1 items-center gap-2">
                             <MapPin className="size-4" />
                             <input
                                 value={search}
+                                aria-label="Search listings by neighborhood, city, or ZIP"
                                 onChange={(event) =>
                                     setSearch(event.target.value)
                                 }
@@ -144,22 +159,21 @@ export default function ListingIndex({
                                         applyFilters();
                                     }
                                 }}
-                                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[#707789]"
+                                className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                                 placeholder="Neighborhood, City, or Zip"
                             />
                         </label>
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="ml-auto text-xs font-semibold text-blue-700"
+                            className="ml-auto text-xs font-semibold text-primary"
                         >
                             Clear
                         </button>
                     </div>
 
-                    <section className="mt-8 overflow-hidden rounded-md border border-[#c4c8d9] bg-white">
-                        <div className="grid min-w-[58rem] grid-cols-[3rem_minmax(18rem,1fr)_8rem_9rem_10rem_10rem_8rem] items-center bg-[#eef1fb] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#5e6475]">
-                            <input type="checkbox" className="size-4" />
+                    <section className="mt-8 overflow-hidden rounded-md border border-border bg-card">
+                        <div className="grid min-w-[55rem] grid-cols-[minmax(18rem,1fr)_8rem_9rem_10rem_10rem_8rem] items-center bg-muted px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                             <div>Property</div>
                             <div>Status</div>
                             <div>Price</div>
@@ -169,7 +183,7 @@ export default function ListingIndex({
                         </div>
 
                         <div className="overflow-x-auto">
-                            <div className="min-w-[58rem] divide-y divide-[#d8dbea]">
+                            <div className="min-w-[55rem] divide-y divide-border">
                                 {paginated.data.map((listing) => (
                                     <PropertyRow
                                         key={listing.id}
@@ -180,27 +194,11 @@ export default function ListingIndex({
                         </div>
 
                         {paginated.data.length === 0 && (
-                            <div className="px-4 py-14 text-center text-sm text-[#687083]">
+                            <EmptyState>
                                 No listings match the current filters.
-                            </div>
+                            </EmptyState>
                         )}
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d8dbea] px-4 py-3 text-sm text-[#596071]">
-                            <span>
-                                Showing {paginated.from ?? 0} to{' '}
-                                {paginated.to ?? 0} of {paginated.total} entries
-                            </span>
-                            <div className="flex items-center gap-2">
-                                {uniquePaginationLinks(paginated.links).map((link) => (
-                                    <PaginationLink
-                                        key={`${link.label}-${link.url}`}
-                                        label={paginationLabel(link.label)}
-                                        url={link.url}
-                                        active={link.active}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                        <Pagination paginated={paginated} />
                     </section>
                 </section>
             </main>
@@ -225,12 +223,11 @@ function PropertyRow({ listing }: { listing: ListingSummary }) {
     const image = listing.media?.[0]?.url;
 
     return (
-        <div className="grid grid-cols-[3rem_minmax(18rem,1fr)_8rem_9rem_10rem_10rem_8rem] items-center px-4 py-3 text-sm">
-            <input type="checkbox" className="size-4" />
+        <div className="grid grid-cols-[minmax(18rem,1fr)_8rem_9rem_10rem_10rem_8rem] items-center px-4 py-3 text-sm">
             <div className="flex min-w-0 items-center gap-4">
                 <Link
                     href={listings.show(listing)}
-                    className="block size-16 shrink-0 overflow-hidden rounded-sm border border-[#cfd3e3] bg-[#eef1fb]"
+                    className="block size-16 shrink-0 overflow-hidden rounded-sm border border-border bg-muted"
                 >
                     {image ? (
                         <img
@@ -239,7 +236,7 @@ function PropertyRow({ listing }: { listing: ListingSummary }) {
                             className="size-full object-cover"
                         />
                     ) : (
-                        <div className="flex size-full items-center justify-center text-[#858b9b]">
+                        <div className="flex size-full items-center justify-center text-muted-foreground">
                             <ImageIcon className="size-5" />
                         </div>
                     )}
@@ -247,22 +244,22 @@ function PropertyRow({ listing }: { listing: ListingSummary }) {
                 <div className="min-w-0">
                     <Link
                         href={listings.show(listing)}
-                        className="truncate font-semibold text-[#1f2330] hover:text-blue-700"
+                        className="truncate font-semibold text-foreground hover:text-primary"
                     >
                         {listing.address}
                     </Link>
-                    <div className="mt-1 truncate text-xs text-[#687083]">
+                    <div className="mt-1 truncate text-xs text-muted-foreground">
                         {listing.property_type || 'Unspecified type'}
                     </div>
                 </div>
             </div>
             <div>
-                <StatusPill status={listing.status} />
+                <StatusBadge domain="listing" status={listing.status} />
             </div>
-            <div className="font-semibold text-[#1f2330]">
+            <div className="font-semibold text-foreground">
                 {listing.status === 'Draft' ? 'TBD' : money(listing.price)}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-[#5f6677]">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Spec icon={<BedDouble />} label={listing.bedrooms ?? '-'} />
                 <Spec icon={<Bath />} label={listing.bathrooms ?? '-'} />
                 <Spec icon={<Ruler />} label={listing.area_sqft ?? '-'} />
@@ -271,13 +268,13 @@ function PropertyRow({ listing }: { listing: ListingSummary }) {
             <div className="flex justify-end gap-2">
                 <Link
                     href={listings.show(listing)}
-                    className="inline-flex h-8 items-center rounded-sm border border-[#c4c8d9] px-3 text-xs font-semibold hover:bg-[#eef1fb]"
+                    className="inline-flex h-8 items-center rounded-sm border border-border px-3 text-xs font-semibold hover:bg-muted"
                 >
                     View
                 </Link>
                 <Link
                     href={listings.edit(listing)}
-                    className="inline-flex h-8 items-center rounded-sm border border-[#c4c8d9] px-2 text-[#4f5668] hover:bg-[#eef1fb]"
+                    className="inline-flex h-8 items-center rounded-sm border border-border px-2 text-muted-foreground hover:bg-muted"
                     aria-label="Edit listing"
                 >
                     <Pencil className="size-4" />
@@ -290,31 +287,13 @@ function PropertyRow({ listing }: { listing: ListingSummary }) {
 function AgentCell({ agent }: { agent?: AgentSummary | null }) {
     return (
         <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-full bg-[#dfe6f6] text-[0.65rem] font-semibold text-blue-800">
+            <div className="flex size-7 items-center justify-center rounded-full bg-status-info text-[0.65rem] font-semibold text-status-info-foreground">
                 {initials(agent?.name ?? 'Unassigned')}
             </div>
-            <span className="truncate text-sm text-[#2d3242]">
+            <span className="truncate text-sm text-foreground">
                 {shortName(agent?.name) ?? '-'}
             </span>
         </div>
-    );
-}
-
-function StatusPill({ status }: { status: ListingStatus }) {
-    const classes: Record<ListingStatus, string> = {
-        Draft: 'bg-[#e5e7ef] text-[#686e7e]',
-        Active: 'bg-[#e7f0ff] text-blue-700',
-        'Under Offer': 'bg-[#ffe8dd] text-[#b24a1b]',
-        Closed: 'bg-[#e5f5ef] text-[#08784f]',
-        'Closed Lost': 'bg-[#fee2e2] text-[#b91c1c]',
-    };
-
-    return (
-        <span
-            className={`inline-flex h-7 items-center rounded-sm px-3 text-xs font-semibold ${classes[status]}`}
-        >
-            {status}
-        </span>
     );
 }
 
@@ -327,57 +306,8 @@ function Spec({ icon, label }: { icon: ReactNode; label: string | number }) {
     );
 }
 
-function PaginationLink({
-    label,
-    url,
-    active,
-}: {
-    label: string;
-    url: string | null;
-    active: boolean;
-}) {
-    const content =
-        label === 'Previous' ? (
-            <ChevronLeft className="size-4" />
-        ) : label === 'Next' ? (
-            <ChevronRight className="size-4" />
-        ) : (
-            label
-        );
-    const classes = active
-        ? 'bg-blue-700 text-white'
-        : 'border border-transparent text-[#4f5668] hover:border-[#c4c8d9] hover:bg-[#eef1fb]';
-
-    if (!url) {
-        return (
-            <span
-                className={`inline-flex size-9 items-center justify-center rounded-sm opacity-50 ${classes}`}
-            >
-                {content}
-            </span>
-        );
-    }
-
-    return (
-        <Link
-            href={url}
-            className={`inline-flex size-9 items-center justify-center rounded-sm text-sm font-semibold ${classes}`}
-        >
-            {content}
-        </Link>
-    );
-}
-
 function Divider() {
-    return <span className="h-6 w-px bg-[#cfd3e3]" />;
-}
-
-function money(value: string | number) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'PHP',
-        maximumFractionDigits: 0,
-    }).format(Number(value));
+    return <span className="h-6 w-px bg-border" />;
 }
 
 function initials(name: string) {
@@ -402,43 +332,6 @@ function shortName(name?: string | null) {
     }
 
     return `${parts[0][0]}. ${parts.at(-1)}`;
-}
-
-function paginationLabel(label: string) {
-    const normalized = label
-        .replace(/&laquo;|«/g, '')
-        .replace(/&raquo;|»/g, '')
-        .trim();
-
-    if (/previous/i.test(normalized)) {
-        return 'Previous';
-    }
-
-    if (/next/i.test(normalized)) {
-        return 'Next';
-    }
-
-    return normalized;
-}
-
-function uniquePaginationLinks(links: PaginatedListings['links']) {
-    const seen = new Set<string>();
-
-    return links.filter((link) => {
-        const label = paginationLabel(link.label);
-        const key =
-            label === 'Previous' || label === 'Next'
-                ? label
-                : `${label}-${link.url ?? 'disabled'}`;
-
-        if (seen.has(key)) {
-            return false;
-        }
-
-        seen.add(key);
-
-        return true;
-    });
 }
 
 function useString(initialValue: string): [string, (value: string) => void] {

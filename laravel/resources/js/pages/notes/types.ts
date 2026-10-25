@@ -1,4 +1,8 @@
-import type { AgentOption, Paginated, RelatedEntityOption } from '../workflow-support';
+import type {
+    AgentOption,
+    Paginated,
+    RelatedEntityOption,
+} from '../workflow-support';
 
 export type NoteSummary = {
     id: string;

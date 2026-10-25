@@ -64,7 +64,7 @@ export function TaskForm({ task, assignees, relatedEntities }: TaskFormProps) {
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid gap-4 border-b border-[#C3C6D7]/70 bg-white px-4 py-5 md:grid-cols-2 md:px-6">
+            <div className="grid gap-4 border-b border-border/70 bg-card px-4 py-5 md:grid-cols-2 md:px-6">
                 <Field label="Title" error={errors.title}>
                     <Input
                         value={data.title}
@@ -80,7 +80,7 @@ export function TaskForm({ task, assignees, relatedEntities }: TaskFormProps) {
                             setData('status', value as TaskStatus)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -101,7 +101,7 @@ export function TaskForm({ task, assignees, relatedEntities }: TaskFormProps) {
                             setData('assignee_id', Number(value))
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select assignee" />
                         </SelectTrigger>
                         <SelectContent>
@@ -140,7 +140,7 @@ export function TaskForm({ task, assignees, relatedEntities }: TaskFormProps) {
                         )}
                         onValueChange={setRelatedEntity}
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select related record" />
                         </SelectTrigger>
                         <SelectContent>
@@ -167,7 +167,7 @@ export function TaskForm({ task, assignees, relatedEntities }: TaskFormProps) {
                 />
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-card px-4 py-4 md:px-6">
                 <Button variant="outline" asChild>
                     <Link href={task ? `/tasks/${task.id}` : '/tasks'}>
                         <ArrowLeft />
@@ -197,7 +197,7 @@ function Field({
             <Label>{label}</Label>
             {children}
             {error && (
-                <p className="text-xs font-medium text-red-600">{error}</p>
+                <p className="text-xs font-medium text-destructive">{error}</p>
             )}
         </div>
     );

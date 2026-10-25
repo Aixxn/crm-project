@@ -13,12 +13,12 @@ export default function CreateOffer({ listings, contacts }: CreateOfferProps) {
     return (
         <>
             <Head title="Create offer" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
-                    <h1 className="text-xl font-semibold text-neutral-950">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
+                    <h1 className="text-xl font-semibold text-foreground">
                         Create offer
                     </h1>
-                    <p className="mt-1 text-sm text-neutral-600">
+                    <p className="mt-1 text-sm text-muted-foreground">
                         Record a submitted offer for a listing.
                     </p>
                 </div>

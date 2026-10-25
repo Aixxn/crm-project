@@ -106,7 +106,7 @@ class DashboardController extends Controller
             ->map(fn (Offer $offer) => [
                 'type' => 'Offer',
                 'title' => $offer->listing?->address ?? 'Offer',
-                'subtitle' => '$'.number_format((float) $offer->amount),
+                'subtitle' => '₱'.number_format((float) $offer->amount),
                 'status' => $offer->status->value,
                 'href' => route('offers.show', $offer),
                 'occurred_at' => $offer->updated_at->toISOString(),

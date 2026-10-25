@@ -11,9 +11,9 @@ export default function EditNote({ note, ...options }: EditNoteProps) {
     return (
         <>
             <Head title="Edit Note" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
-                    <h1 className="text-xl font-semibold text-neutral-950">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
+                    <h1 className="text-xl font-semibold text-foreground">
                         Edit note
                     </h1>
                 </div>

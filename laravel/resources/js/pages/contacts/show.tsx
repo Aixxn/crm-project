@@ -12,8 +12,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { EmptyState } from '@/components/empty-state';
+import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { contactName, formatDateTime, money } from '@/lib/format';
 import { dashboard } from '@/routes';
 import contacts from '@/routes/contacts';
 import listings from '@/routes/listings';
@@ -52,8 +55,8 @@ export default function ContactShow({ contact }: ContactShowProps) {
     return (
         <>
             <Head title={contactName(contact)} />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="min-w-0">
                             <Button
@@ -68,12 +71,12 @@ export default function ContactShow({ contact }: ContactShowProps) {
                                 </Link>
                             </Button>
                             <div className="flex flex-wrap items-center gap-3">
-                                <h1 className="text-xl font-semibold text-neutral-950">
+                                <h1 className="text-xl font-semibold text-foreground">
                                     {contactName(contact)}
                                 </h1>
                                 <RoleBadge role={contact.role} />
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-600">
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                                 <span>{contact.email ?? 'No email'}</span>
                                 <span>{contact.phone ?? 'No phone'}</span>
                             </div>
@@ -101,8 +104,8 @@ export default function ContactShow({ contact }: ContactShowProps) {
                 </div>
 
                 <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_20rem] md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white">
-                        <div className="flex gap-1 overflow-x-auto border-b border-[#C3C6D7]/70 px-3 py-2">
+                    <section className="rounded-md border border-border bg-card">
+                        <div className="flex gap-1 overflow-x-auto border-b border-border/70 px-3 py-2">
                             {tabs.map((tab) => (
                                 <Button
                                     key={tab.key}
@@ -141,14 +144,14 @@ export default function ContactShow({ contact }: ContactShowProps) {
                         <Panel title="Contact">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex size-10 items-center justify-center rounded-md border border-[#C3C6D7] bg-[#FAF8FF]">
-                                        <ContactRound className="size-4 text-neutral-700" />
+                                    <div className="flex size-10 items-center justify-center rounded-md border border-border bg-muted">
+                                        <ContactRound className="size-4 text-foreground" />
                                     </div>
                                     <div>
-                                        <div className="font-medium text-neutral-950">
+                                        <div className="font-medium text-foreground">
                                             {contactName(contact)}
                                         </div>
-                                        <div className="text-sm text-neutral-500">
+                                        <div className="text-sm text-muted-foreground">
                                             {contact.role}
                                         </div>
                                     </div>
@@ -228,11 +231,9 @@ function Overview({ contact }: { contact: ContactDetail }) {
                     value={contact.phone ?? '-'}
                 />
             </div>
-            <div className="rounded-md border border-[#C3C6D7] p-4">
-                <div className="text-sm font-medium text-neutral-950">
-                    Notes
-                </div>
-                <p className="mt-2 text-sm whitespace-pre-wrap text-neutral-700">
+            <div className="rounded-md border border-border p-4">
+                <div className="text-sm font-medium text-foreground">Notes</div>
+                <p className="mt-2 text-sm whitespace-pre-wrap text-foreground">
                     {contact.notes || 'No notes recorded.'}
                 </p>
             </div>
@@ -252,21 +253,21 @@ function Listings({ rows }: { rows: RelatedListing[] }) {
             {rows.map((listing) => (
                 <div
                     key={listing.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#C3C6D7] p-4"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-4"
                 >
                     <div>
                         <Link
                             href={listings.show(listing)}
-                            className="font-medium text-neutral-950 hover:underline"
+                            className="font-medium text-foreground hover:underline"
                         >
                             {listing.address}
                         </Link>
-                        <div className="mt-1 text-sm text-neutral-600">
+                        <div className="mt-1 text-sm text-muted-foreground">
                             {listing.property_type || 'Unspecified type'} /{' '}
                             {money(listing.price)}
                         </div>
                     </div>
-                    <Badge variant="outline">{listing.status}</Badge>
+                    <StatusBadge domain="listing" status={listing.status} />
                 </div>
             ))}
         </div>
@@ -276,6 +277,7 @@ function Listings({ rows }: { rows: RelatedListing[] }) {
 function Inquiries({ rows }: { rows: RelatedInquiry[] }) {
     return (
         <ActivityTable
+            domain="inquiry"
             empty="No inquiries linked to this contact."
             icon={<MessageSquareText />}
             rows={rows.map((inquiry) => ({
@@ -295,6 +297,7 @@ function Inquiries({ rows }: { rows: RelatedInquiry[] }) {
 function Viewings({ rows }: { rows: RelatedViewing[] }) {
     return (
         <ActivityTable
+            domain="viewing"
             empty="No viewings linked to this contact."
             icon={<CalendarClock />}
             rows={rows.map((viewing) => ({
@@ -311,6 +314,7 @@ function Viewings({ rows }: { rows: RelatedViewing[] }) {
 function Offers({ rows }: { rows: RelatedOffer[] }) {
     return (
         <ActivityTable
+            domain="offer"
             empty="No offers linked to this contact."
             icon={<PhilippinePeso />}
             rows={rows.map((offer) => ({
@@ -327,6 +331,7 @@ function Offers({ rows }: { rows: RelatedOffer[] }) {
 function ActivityTable({
     rows,
     empty,
+    domain,
 }: {
     icon: ReactNode;
     rows: Array<{
@@ -337,6 +342,7 @@ function ActivityTable({
         value: string;
     }>;
     empty: string;
+    domain: 'inquiry' | 'viewing' | 'offer';
 }) {
     if (rows.length === 0) {
         return <EmptyState>{empty}</EmptyState>;
@@ -345,7 +351,7 @@ function ActivityTable({
     return (
         <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-sm">
-                <thead className="text-xs font-medium text-neutral-500 uppercase">
+                <thead className="text-xs font-medium text-muted-foreground uppercase">
                     <tr>
                         <th className="px-3 py-2">Listing</th>
                         <th className="px-3 py-2">Details</th>
@@ -353,19 +359,22 @@ function ActivityTable({
                         <th className="px-3 py-2">Value</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-[#C3C6D7]/60">
+                <tbody className="divide-y divide-border/60">
                     {rows.map((row) => (
                         <tr key={row.id}>
-                            <td className="px-3 py-3 font-medium text-neutral-950">
+                            <td className="px-3 py-3 font-medium text-foreground">
                                 {row.primary}
                             </td>
-                            <td className="px-3 py-3 text-neutral-600">
+                            <td className="px-3 py-3 text-muted-foreground">
                                 {row.secondary}
                             </td>
                             <td className="px-3 py-3">
-                                <Badge variant="outline">{row.status}</Badge>
+                                <StatusBadge
+                                    domain={domain}
+                                    status={row.status}
+                                />
                             </td>
-                            <td className="px-3 py-3 text-neutral-700">
+                            <td className="px-3 py-3 text-foreground">
                                 {row.value}
                             </td>
                         </tr>
@@ -378,8 +387,8 @@ function ActivityTable({
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-            <h2 className="text-sm font-semibold text-neutral-950">{title}</h2>
+        <section className="rounded-md border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
             <div className="mt-4">{children}</div>
         </section>
     );
@@ -387,9 +396,9 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function Metric({ label, value }: { label: string; value: number }) {
     return (
-        <div className="rounded-md border border-[#C3C6D7] p-3">
-            <dt className="text-xs text-neutral-500">{label}</dt>
-            <dd className="mt-1 text-lg font-semibold text-neutral-950">
+        <div className="rounded-md border border-border p-3">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="mt-1 text-lg font-semibold text-foreground">
                 {value}
             </dd>
         </div>
@@ -404,7 +413,7 @@ function ContactMethod({
     value: string | null;
 }) {
     return (
-        <div className="flex items-center gap-2 text-sm text-neutral-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {icon}
             {value ?? '-'}
         </div>
@@ -421,12 +430,12 @@ function OverviewMetric({
     value: ReactNode;
 }) {
     return (
-        <div className="rounded-md border border-[#C3C6D7] p-4">
-            <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <div className="rounded-md border border-border p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {icon}
                 {label}
             </div>
-            <div className="mt-2 text-base font-semibold text-neutral-950">
+            <div className="mt-2 text-base font-semibold text-foreground">
                 {value}
             </div>
         </div>
@@ -435,9 +444,9 @@ function OverviewMetric({
 
 function RoleBadge({ role }: { role: ContactRole }) {
     const classes: Record<ContactRole, string> = {
-        Owner: 'border-sky-200 bg-sky-50 text-sky-700',
-        Buyer: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        Tenant: 'border-amber-200 bg-amber-50 text-amber-700',
+        Owner: 'border-status-info-border bg-status-info text-status-info-foreground',
+        Buyer: 'border-status-success-border bg-status-success text-status-success-foreground',
+        Tenant: 'border-status-warning-border bg-status-warning text-status-warning-foreground',
     };
 
     return (
@@ -445,37 +454,4 @@ function RoleBadge({ role }: { role: ContactRole }) {
             {role}
         </Badge>
     );
-}
-
-function EmptyState({ children }: { children: ReactNode }) {
-    return (
-        <div className="flex min-h-40 items-center justify-center rounded-md border border-dashed border-[#C3C6D7] bg-[#FAF8FF] px-4 text-center text-sm text-neutral-600">
-            {children}
-        </div>
-    );
-}
-
-function contactName(contact: {
-    first_name: string;
-    last_name: string | null;
-}) {
-    return `${contact.first_name} ${contact.last_name ?? ''}`.trim();
-}
-
-function money(value: string | number) {
-    return new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-        maximumFractionDigits: 0,
-    }).format(Number(value));
-}
-
-function formatDateTime(value: string) {
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-    }).format(new Date(value));
 }

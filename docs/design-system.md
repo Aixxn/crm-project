@@ -1,17 +1,19 @@
 # CRM and portal design system
 
-Status: accepted design direction, 2026-10-22; migration pending. This document defines a shared foundation for the existing screens. It does not claim the current screens comply.
+Status: accepted design direction, 2026-10-22; shared tokens and Phase 4 screen migrations are implemented locally. Browser review of both appearances, responsive widths, and keyboard states remains pending. This document defines the shared foundation and does not claim complete visual acceptance.
 
-## Baseline and friction
+## Review baseline and friction
 
-The application already has Radix-based primitives in `laravel/resources/js/components/ui`, class-variance-authority variants, CSS semantic variables, and `use-appearance.tsx` with light/dark/system modes. Keep these investments.
+The application already has Radix-based primitives in `laravel/resources/js/components/ui`, class-variance-authority variants, CSS semantic variables, and `use-appearance.ts` with light/dark/system modes. Keep these investments.
 
-| Evidence | Current inconsistency | Target |
+The following findings record the October 22 review baseline. Phase 4 addresses them in the migrated screens; browser acceptance remains open.
+
+| Evidence | Original finding | Target |
 | --- | --- | --- |
 | `resources/css/app.css` | Semantic tokens exist, but page styling often bypasses them | One token source consumed by every surface |
 | `pages/dashboard.tsx`, `listings/index.tsx` | Repeated raw lavender, gray, white and blue classes | CRM page patterns using semantic tokens |
 | `pages/public/browse.tsx`, `property.tsx` | Similar but different raw colors, radii and headers | One portal layout with shared primitives |
-| `pages/workflow-support.tsx` | Types, formatting, statuses and visual patterns share a page module | Independent types, formatters and shared visual modules |
+| `pages/workflow-support.tsx` | Types, formatting, statuses and visual patterns share a page module | Independent types, formatters and shared visual modules, with compatibility exports |
 | `workflow-support` status registry | Requested and most Listing statuses have no explicit mapping | Domain-aware coverage of every stored status |
 | `app.css` dark sidebar tokens | Primary background and foreground use the same color | Verify each foreground/background pair in both appearances |
 | Existing appearance hook | System changes apply CSS but do not notify hook subscribers | Keep rendered appearance controls synchronized with the resolved theme |
@@ -38,10 +40,13 @@ Preserve the existing shadcn-style semantic names. Avoid two parallel vocabulari
 | Muted foreground | slate-600 / `#475569` | slate-300 / `#cbd5e1` |
 | Primary action | blue-700 / `#1d4ed8` | blue-300 / `#93c5fd` |
 | Primary foreground | white | slate-950 |
-| Border / input | slate-300 / `#cbd5e1` | slate-600 / `#475569` |
+| Decorative border | slate-300 / `#cbd5e1` | slate-600 / `#475569` |
+| Input outline | slate-500 / `#64748b` | slate-500 / `#64748b` |
 | Focus ring | blue-700 | blue-300 |
 
 These are implementation starting values, not a completed contrast audit. Secondary/accent/popover/sidebar tokens must derive from the same roles. Provide matching foreground values for all states; do not reuse an accent as its own foreground. Where CSS variables reference appearance-dependent variables, use the Tailwind 4 `@theme inline` alias pattern and verify the emitted utility values.
+
+Use `border-input` for interactive control boundaries and `border-border` for decorative separators. Photography uses separate overlay background/foreground roles. Destructive Button and Badge variants consume the destructive foreground role in both appearances. `tests/frontend/tokens.test.mjs` checks 42 semantic text/input/focus pairs from the actual CSS; photo composition and rendered states still need browser review.
 
 Status roles have foreground, background, and optional border tokens for `neutral`, `info`, `warning`, `success`, and `danger`. Use slate, blue, amber, emerald, and red primitives respectively. Define both appearances. A status is a lifecycle label, not necessarily an action result: an accepted Offer is success; an Inquiry labeled Closed can be neutral.
 
@@ -53,7 +58,7 @@ Status roles have foreground, background, and optional border tokens for `neutra
 | Offer | Submitted → info; Accepted → success; Rejected → danger; Withdrawn → neutral |
 | Task | Open → info; In Progress → warning; Done → success |
 
-The future status presentation module resolves both domain and stored value. It must preserve the visible text, cover all enum cases, and provide a readable fallback for unknown legacy values. Status color never grants an action or determines a transition; the backend owns those rules.
+The shared status presentation module resolves both domain and stored value. It preserves the visible text, covers every current enum case, and provides a readable fallback for unknown legacy values. Status color never grants an action or determines a transition; the backend owns those rules.
 
 ## Typography, space and motion
 

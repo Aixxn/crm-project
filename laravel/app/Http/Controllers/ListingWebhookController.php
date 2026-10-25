@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Announcements\AcceptListingAnnouncement;
 use App\Enums\ContactRole;
 use App\Models\Listing;
 use App\Models\User;
 use App\Notifications\ListingOfferedNotification;
+use App\Services\ListingWebhookSignature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -15,7 +17,7 @@ class ListingWebhookController extends Controller
 {
     public function offered(Request $request): JsonResponse
     {
-        $this->validateSignature($request);
+        app(ListingWebhookSignature::class)->validate($request);
 
         $validated = $request->validate([
             'listing_id' => ['required', 'string', 'exists:listings,id'],
@@ -47,33 +49,21 @@ class ListingWebhookController extends Controller
             });
 
         return response()->json([
-            'message' => __('Listing offer notifications queued.'),
+            'message' => __('Listing offer notifications delivered.'),
             'notified' => $notified,
         ]);
     }
 
-    private function validateSignature(Request $request): void
+    public function offeredV2(Request $request, AcceptListingAnnouncement $accept): JsonResponse
     {
-        $secret = config('services.listing_webhook.secret');
+        app(ListingWebhookSignature::class)->validate($request);
+        $validated = $request->validate([
+            'listing_id' => ['required', 'uuid'],
+            'event_id' => ['required', 'string', 'max:120'],
+        ]);
+        $id = $accept->handle($validated['event_id'], $validated['listing_id']);
 
-        abort_if(! is_string($secret) || $secret === '', Response::HTTP_SERVICE_UNAVAILABLE);
-
-        $timestamp = $request->header('X-Webhook-Timestamp');
-        $signature = $request->header('X-Webhook-Signature');
-
-        abort_if(! is_string($timestamp) || ! ctype_digit($timestamp), Response::HTTP_UNAUTHORIZED);
-        abort_if(! is_string($signature) || $signature === '', Response::HTTP_UNAUTHORIZED);
-
-        $tolerance = (int) config('services.listing_webhook.signature_tolerance', 300);
-
-        abort_if(abs(now()->timestamp - (int) $timestamp) > $tolerance, Response::HTTP_UNAUTHORIZED);
-
-        $expected = hash_hmac('sha256', $timestamp.'.'.$request->getContent(), $secret);
-        $normalizedSignature = str_starts_with($signature, 'sha256=')
-            ? substr($signature, 7)
-            : $signature;
-
-        abort_unless(hash_equals($expected, $normalizedSignature), Response::HTTP_UNAUTHORIZED);
+        return response()->json(['message' => __('Listing announcement accepted.'), 'receipt_id' => $id], 202);
     }
 
     /**

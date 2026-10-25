@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
 import { useState } from 'react';
+import { money } from '@/lib/format';
 
 type PortalNotification = {
     id: string;
@@ -11,18 +12,6 @@ type PortalNotification = {
     price: number | null;
     createdAt: string | null;
 };
-
-function formatPeso(value: number | null) {
-    if (value === null) {
-        return null;
-    }
-
-    return new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-        maximumFractionDigits: 0,
-    }).format(value);
-}
 
 export function PublicNotificationBell() {
     const { notifications } = usePage().props;
@@ -51,50 +40,51 @@ export function PublicNotificationBell() {
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
-                className="relative flex size-9 items-center justify-center rounded-sm text-[#4F5365] hover:bg-[#F0F2F8] hover:text-blue-700"
+                className="relative flex size-9 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-primary"
                 aria-label="Notifications"
             >
                 <Bell className="size-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1 text-[10px] font-bold text-white">
+                    <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
             {open && (
-                <div className="absolute top-11 right-0 z-50 w-80 rounded-md border border-[#D8DCE8] bg-white shadow-lg">
-                    <div className="border-b border-[#E4E7F0] px-4 py-3">
-                        <p className="text-sm font-semibold text-[#151826]">
+                <div className="absolute top-11 right-0 z-50 w-80 rounded-md border border-border bg-card shadow-lg">
+                    <div className="border-b border-border px-4 py-3">
+                        <p className="text-sm font-semibold text-foreground">
                             Notifications
                         </p>
                     </div>
                     {recent.length > 0 ? (
                         <div className="max-h-96 overflow-y-auto">
                             {recent.map((notification) => {
-                                const formattedPrice = formatPeso(
-                                    notification.price,
-                                );
+                                const formattedPrice =
+                                    notification.price === null
+                                        ? null
+                                        : money(notification.price);
 
                                 return (
                                     <div
                                         key={notification.id}
-                                        className="border-b border-[#EEF0F6] px-4 py-3 last:border-b-0"
+                                        className="border-b border-border px-4 py-3 last:border-b-0"
                                     >
                                         <Link
                                             href={
                                                 notification.href ?? '/browse'
                                             }
-                                            className="block text-sm font-semibold text-[#151826] hover:text-blue-700"
+                                            className="block text-sm font-semibold text-foreground hover:text-primary"
                                         >
                                             {notification.title ??
                                                 'New listing'}
                                         </Link>
-                                        <p className="mt-1 text-xs leading-5 text-[#626778]">
+                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
                                             {notification.message ??
                                                 'A new listing is available.'}
                                         </p>
-                                        <div className="mt-2 flex items-center justify-between gap-3 text-[11px] font-semibold tracking-wide text-[#6E7284] uppercase">
+                                        <div className="mt-2 flex items-center justify-between gap-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                                             <span>
                                                 {notification.status ??
                                                     'Available'}
@@ -111,7 +101,7 @@ export function PublicNotificationBell() {
                                             onClick={() =>
                                                 markAsRead(notification)
                                             }
-                                            className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-800"
+                                            className="mt-3 text-xs font-semibold text-primary hover:text-status-info-foreground"
                                         >
                                             Mark as read
                                         </button>
@@ -120,7 +110,7 @@ export function PublicNotificationBell() {
                             })}
                         </div>
                     ) : (
-                        <div className="px-4 py-8 text-center text-sm text-[#626778]">
+                        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                             No new listing notifications.
                         </div>
                     )}

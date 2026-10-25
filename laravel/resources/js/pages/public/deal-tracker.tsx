@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import {
     ArrowRight,
     CalendarDays,
@@ -9,10 +9,12 @@ import {
     MailCheck,
     MapPin,
     MessageSquare,
-    TicketCheck,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { PublicHeader } from './_components/public-header';
+import { StatusBadge } from '@/components/status-badge';
+import { formatDateTime } from '@/lib/format';
+import type { WorkflowDomain } from '@/lib/workflow-status';
+import { PublicLayout } from './_components/public-layout';
 
 type DealListing = {
     title: string;
@@ -52,241 +54,219 @@ export default function DealTracker({
         activeOffer || upcomingViewing || latestInquiry,
     );
     const scheduledAt = upcomingViewing?.scheduledAt
-        ? new Date(upcomingViewing.scheduledAt)
-        : null;
-    const viewingEndTime = scheduledAt
-        ? new Date(scheduledAt.getTime() + 60 * 60 * 1000)
+        ? formatDateTime(upcomingViewing.scheduledAt)
         : null;
 
     return (
-        <>
-            <Head title="Deal Tracker" />
-            <main className="min-h-screen bg-[#FBFBFE] text-[#202230]">
-                <PublicHeader active="Concierge" />
-
-                <section className="mx-auto max-w-7xl px-5 py-11">
-                    <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-                        <div>
-                            <h1 className="text-5xl font-semibold tracking-tight">
-                                Deal Tracker
-                            </h1>
-                            <p className="mt-5 max-w-3xl text-base leading-7 text-[#4F5365]">
-                                Monitor the progress of your active inquiries,
-                                scheduled viewings, and submitted offers in
-                                real-time.
-                            </p>
-                        </div>
-                        <div className="flex gap-4">
-                            <Kpi
-                                label="Active Offers"
-                                value={String(kpis.activeOffers)}
-                            />
-                            <Kpi
-                                label="Inquiries"
-                                value={String(kpis.inquiries)}
-                            />
-                        </div>
+        <PublicLayout title="Deal Tracker" active="Concierge">
+            <section className="mx-auto max-w-7xl px-5 py-11">
+                <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+                    <div>
+                        <h1 className="text-5xl font-semibold tracking-tight">
+                            Deal Tracker
+                        </h1>
+                        <p className="mt-5 max-w-3xl text-base leading-7 text-muted-foreground">
+                            Monitor the progress of your active inquiries,
+                            scheduled viewings, and submitted offers in
+                            real-time.
+                        </p>
                     </div>
-
-                    {!hasActivity && (
-                        <EmptyState
-                            title="No active buyer activity"
-                            body="Inquiries, viewing requests, and offers will appear here once you start engaging with listings."
+                    <div className="flex gap-4">
+                        <Kpi
+                            label="Active Offers"
+                            value={String(kpis.activeOffers)}
                         />
-                    )}
+                        <Kpi label="Inquiries" value={String(kpis.inquiries)} />
+                    </div>
+                </div>
 
-                    {activeOffer?.listing && (
-                        <section className="mt-8 grid overflow-hidden rounded-md border border-[#C8CDDA] bg-white lg:grid-cols-[26rem_1fr]">
-                            <div className="relative min-h-[25.75rem] bg-[#EEF0F6]">
-                                {activeOffer.listing.image ? (
-                                    <img
-                                        src={activeOffer.listing.image}
-                                        alt={activeOffer.listing.title}
-                                        className="absolute inset-0 size-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex size-full min-h-[25.75rem] items-center justify-center text-sm text-[#6E7284]">
-                                        No image available
-                                    </div>
-                                )}
-                                <span className="absolute top-5 left-4 inline-flex items-center gap-1 rounded-full bg-[#FFE2D5] px-4 py-1.5 text-sm font-semibold text-[#9A3A15]">
-                                    <TicketCheck className="size-4" />
-                                    {activeOffer.status}
-                                </span>
+                {!hasActivity && (
+                    <EmptyState
+                        title="No active buyer activity"
+                        body="Inquiries, viewing requests, and offers will appear here once you start engaging with listings."
+                    />
+                )}
+
+                {activeOffer?.listing && (
+                    <section className="mt-8 grid overflow-hidden rounded-md border border-border bg-card lg:grid-cols-[26rem_1fr]">
+                        <div className="relative min-h-[25.75rem] bg-muted">
+                            {activeOffer.listing.image ? (
+                                <img
+                                    src={activeOffer.listing.image}
+                                    alt={activeOffer.listing.title}
+                                    className="absolute inset-0 size-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex size-full min-h-[25.75rem] items-center justify-center text-sm text-muted-foreground">
+                                    No image available
+                                </div>
+                            )}
+                            <div className="absolute top-5 left-4">
+                                <StatusBadge
+                                    domain="offer"
+                                    status={activeOffer.status}
+                                />
                             </div>
+                        </div>
 
-                            <div className="flex min-w-0 flex-col p-5 md:p-6">
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                        <h2 className="text-2xl font-semibold">
-                                            {activeOffer.listing.title}
-                                        </h2>
-                                        <div className="mt-2 flex items-center gap-1 text-sm text-[#4F5365]">
-                                            <MapPin className="size-4" />
-                                            Los Angeles, CA 90210
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-semibold">
-                                            {activeOffer.amount ??
-                                                activeOffer.listing.price}
-                                        </div>
-                                        <Link
-                                            href={activeOffer.listing.href}
-                                            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700"
-                                        >
-                                            View Details
-                                            <ArrowRight className="size-4" />
-                                        </Link>
+                        <div className="flex min-w-0 flex-col p-5 md:p-6">
+                            <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                    <h2 className="text-2xl font-semibold">
+                                        {activeOffer.listing.title}
+                                    </h2>
+                                    <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+                                        <MapPin className="size-4" />
+                                        Los Angeles, CA 90210
                                     </div>
                                 </div>
+                                <div className="text-right">
+                                    <div className="text-2xl font-semibold">
+                                        {activeOffer.amount ??
+                                            activeOffer.listing.price}
+                                    </div>
+                                    <Link
+                                        href={activeOffer.listing.href}
+                                        className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary"
+                                    >
+                                        View Details
+                                        <ArrowRight className="size-4" />
+                                    </Link>
+                                </div>
+                            </div>
 
-                                <div className="mt-auto rounded-sm border border-[#CDD2E0] bg-[#F0F1FA] p-6">
-                                    <Progress status={activeOffer.status} />
-                                    <div className="mt-5 border-t border-[#D8DCE8] pt-5">
-                                        <div className="flex flex-wrap items-center justify-between gap-4">
-                                            <p className="text-sm text-[#5F6373]">
-                                                Last update:{' '}
-                                                {activeOffer.updatedAt ??
-                                                    'Seller agent reviewing contingencies. (2 hours ago)'}
-                                            </p>
-                                            <button className="inline-flex h-9 items-center justify-center rounded-sm bg-blue-700 px-6 text-sm font-semibold text-white hover:bg-blue-800">
-                                                Contact Agent
-                                            </button>
+                            <div className="mt-auto rounded-sm border border-border bg-muted p-6">
+                                <Progress status={activeOffer.status} />
+                                <div className="mt-5 border-t border-border pt-5">
+                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                        <p className="text-sm text-muted-foreground">
+                                            Last update:{' '}
+                                            {activeOffer.updatedAt ??
+                                                'Seller agent reviewing contingencies. (2 hours ago)'}
+                                        </p>
+                                        <span className="text-sm text-muted-foreground">
+                                            Contact your listing agent for an
+                                            update.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    {upcomingViewing?.listing && (
+                        <section className="rounded-md border border-border bg-card p-5">
+                            <DealHeader
+                                listing={upcomingViewing.listing}
+                                icon={<CalendarDays className="size-3.5" />}
+                                domain="viewing"
+                                status={upcomingViewing.status}
+                            />
+
+                            <div className="mt-6 rounded-sm border border-border bg-muted p-4">
+                                <div className="flex items-center gap-4">
+                                    <div>
+                                        <div className="font-semibold">
+                                            In-Person Tour
+                                        </div>
+                                        <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+                                            <Clock3 className="size-4" />
+                                            {scheduledAt ??
+                                                'Pending confirmation'}
                                         </div>
                                     </div>
+                                </div>
+                                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                                    <span className="inline-flex min-h-9 items-center text-sm text-muted-foreground">
+                                        To request a change, contact your agent.
+                                    </span>
+                                    <Link
+                                        href={upcomingViewing.listing.href}
+                                        className="inline-flex h-9 items-center justify-center rounded-sm bg-muted text-sm font-semibold text-primary"
+                                    >
+                                        Property Detail
+                                    </Link>
                                 </div>
                             </div>
                         </section>
                     )}
 
-                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                        {upcomingViewing?.listing && (
-                            <section className="rounded-md border border-[#C8CDDA] bg-white p-5">
-                                <DealHeader
-                                    listing={upcomingViewing.listing}
-                                    icon={<CalendarDays className="size-3.5" />}
-                                    status={upcomingViewing.status}
-                                />
+                    {latestInquiry?.listing && (
+                        <section className="rounded-md border border-border bg-card p-5">
+                            <DealHeader
+                                listing={latestInquiry.listing}
+                                icon={<MessageSquare className="size-3.5" />}
+                                domain="inquiry"
+                                status={latestInquiry.status}
+                            />
 
-                                <div className="mt-6 rounded-sm border border-[#CDD2E0] bg-[#F0F1FA] p-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="rounded-sm border border-[#CDD2E0] bg-white px-4 py-3 text-center">
-                                            <div className="text-xs font-semibold text-[#5F6373] uppercase">
-                                                {scheduledAt
-                                                    ? scheduledAt.toLocaleString(
-                                                          'default',
-                                                          { month: 'short' },
-                                                      )
-                                                    : 'Tour'}
-                                            </div>
-                                            <div className="text-3xl font-semibold text-blue-700">
-                                                {scheduledAt
-                                                    ? scheduledAt.getDate()
-                                                    : '--'}
-                                            </div>
+                            <div className="mt-6 rounded-sm border border-border bg-muted p-5">
+                                <div className="flex gap-4">
+                                    <MailCheck className="mt-1 size-6 text-muted-foreground" />
+                                    <div>
+                                        <div className="font-semibold">
+                                            {latestInquiry.message ??
+                                                'Message sent to listing agent'}
                                         </div>
-                                        <div>
-                                            <div className="font-semibold">
-                                                In-Person Tour
-                                            </div>
-                                            <div className="mt-2 flex items-center gap-1 text-sm text-[#4F5365]">
-                                                <Clock3 className="size-4" />
-                                                {scheduledAt
-                                                    ? `${scheduledAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - ${viewingEndTime?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
-                                                    : 'Pending confirmation'}
-                                            </div>
+                                        <div className="mt-2 text-sm text-muted-foreground">
+                                            Sent:{' '}
+                                            {latestInquiry.createdAt ??
+                                                'Recently'}
                                         </div>
-                                    </div>
-                                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                                        <button className="h-9 rounded-sm border border-[#8C92A4] text-sm font-semibold">
-                                            Reschedule
-                                        </button>
-                                        <Link
-                                            href={upcomingViewing.listing.href}
-                                            className="inline-flex h-9 items-center justify-center rounded-sm bg-[#F2F3FA] text-sm font-semibold text-blue-700"
-                                        >
-                                            Property Detail
-                                        </Link>
                                     </div>
                                 </div>
-                            </section>
-                        )}
-
-                        {latestInquiry?.listing && (
-                            <section className="rounded-md border border-[#C8CDDA] bg-white p-5">
-                                <DealHeader
-                                    listing={latestInquiry.listing}
-                                    icon={
-                                        <MessageSquare className="size-3.5" />
-                                    }
-                                    status={latestInquiry.status}
-                                />
-
-                                <div className="mt-6 rounded-sm border border-[#CDD2E0] bg-[#F0F1FA] p-5">
-                                    <div className="flex gap-4">
-                                        <MailCheck className="mt-1 size-6 text-[#5F6373]" />
-                                        <div>
-                                            <div className="font-semibold">
-                                                {latestInquiry.message ??
-                                                    'Message sent to listing agent'}
-                                            </div>
-                                            <div className="mt-2 text-sm text-[#5F6373]">
-                                                Sent:{' '}
-                                                {latestInquiry.createdAt ??
-                                                    'Recently'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-5 h-1 rounded-full bg-[#D8DCE8]">
-                                        <div className="h-1 w-1/4 rounded-full bg-blue-700" />
-                                    </div>
-                                    <div className="mt-3 flex items-center justify-between gap-4 text-sm">
-                                        <Link
-                                            href={latestInquiry.listing.href}
-                                            className="inline-flex items-center gap-1 font-semibold text-blue-700"
-                                        >
-                                            Property Detail
-                                            <ArrowRight className="size-4" />
-                                        </Link>
-                                        <span className="text-[#5F6373]">
-                                            Awaiting Response
-                                        </span>
-                                    </div>
+                                <div className="mt-5 h-1 rounded-full bg-border">
+                                    <div className="h-1 w-1/4 rounded-full bg-primary" />
                                 </div>
-                            </section>
-                        )}
-                    </div>
-                </section>
-
-                <footer className="border-t border-[#D8DCE8] bg-white">
-                    <div className="mx-auto grid max-w-7xl gap-8 px-5 py-9 text-sm text-[#5F6373] md:grid-cols-[1.2fr_1fr_1fr]">
-                        <div>
-                            <div className="text-2xl font-semibold text-blue-700">
-                                EstatePro
+                                <div className="mt-3 flex items-center justify-between gap-4 text-sm">
+                                    <Link
+                                        href={latestInquiry.listing.href}
+                                        className="inline-flex items-center gap-1 font-semibold text-primary"
+                                    >
+                                        Property Detail
+                                        <ArrowRight className="size-4" />
+                                    </Link>
+                                    <span className="text-muted-foreground">
+                                        Awaiting Response
+                                    </span>
+                                </div>
                             </div>
-                            <p className="mt-6">
-                                Copyright 2026 EstatePro. All rights reserved.
-                            </p>
+                        </section>
+                    )}
+                </div>
+            </section>
+
+            <footer className="border-t border-border bg-card">
+                <div className="mx-auto grid max-w-7xl gap-8 px-5 py-9 text-sm text-muted-foreground md:grid-cols-[1.2fr_1fr_1fr]">
+                    <div>
+                        <div className="text-2xl font-semibold text-primary">
+                            EstatePro
                         </div>
-                        <FooterLinks links={['Terms', 'Privacy']} />
-                        <FooterLinks
-                            links={['Contact Us', 'Our Agents', 'Careers']}
-                        />
+                        <p className="mt-6">
+                            Copyright 2026 EstatePro. All rights reserved.
+                        </p>
                     </div>
-                </footer>
-            </main>
-        </>
+                    <FooterLinks links={['Terms', 'Privacy']} />
+                    <FooterLinks
+                        links={['Contact Us', 'Our Agents', 'Careers']}
+                    />
+                </div>
+            </footer>
+        </PublicLayout>
     );
 }
 
 function DealHeader({
     listing,
     icon,
+    domain,
     status,
 }: {
     listing: DealListing;
     icon: ReactNode;
+    domain: WorkflowDomain;
     status: string;
 }) {
     return (
@@ -298,17 +278,19 @@ function DealHeader({
                     className="size-24 rounded-sm object-cover"
                 />
             ) : (
-                <div className="flex size-24 items-center justify-center rounded-sm bg-[#EEF0F6] text-xs text-[#6E7284]">
+                <div className="flex size-24 items-center justify-center rounded-sm bg-muted text-xs text-muted-foreground">
                     No image
                 </div>
             )}
             <div>
-                <span className="inline-flex items-center gap-1 bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+                <div className="flex items-center gap-1">
                     {icon}
-                    {status}
-                </span>
+                    <StatusBadge domain={domain} status={status} />
+                </div>
                 <h2 className="mt-3 text-xl font-semibold">{listing.title}</h2>
-                <p className="mt-1 text-sm text-[#5F6373]">{listing.price}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    {listing.price}
+                </p>
             </div>
         </div>
     );
@@ -325,24 +307,24 @@ function Progress({ status }: { status: string }) {
                         <div
                             className={`absolute top-3 left-1/2 h-1 w-full ${
                                 index < currentIndex
-                                    ? 'bg-blue-700'
-                                    : 'bg-[#D8DCE8]'
+                                    ? 'bg-primary'
+                                    : 'bg-border'
                             }`}
                         />
                     )}
                     <div
                         className={`relative z-10 mx-auto flex size-7 items-center justify-center rounded-full border-2 ${
                             index < currentIndex
-                                ? 'border-blue-700 bg-blue-700 text-white'
+                                ? 'border-primary bg-primary text-primary-foreground'
                                 : index === currentIndex
-                                  ? 'border-blue-700 bg-white text-blue-700'
-                                  : 'border-[#C9CDDA] bg-[#F7F8FC] text-[#6E7284]'
+                                  ? 'border-primary bg-card text-primary'
+                                  : 'border-border bg-muted text-muted-foreground'
                         }`}
                     >
                         <step.icon className="size-4" />
                     </div>
                     <div
-                        className={`mt-2 font-semibold ${index === currentIndex ? 'text-blue-700' : 'text-[#4F5365]'}`}
+                        className={`mt-2 font-semibold ${index === currentIndex ? 'text-primary' : 'text-muted-foreground'}`}
                     >
                         {step.label}
                     </div>
@@ -361,8 +343,8 @@ const progressSteps = [
 
 function Kpi({ label, value }: { label: string; value: string }) {
     return (
-        <div className="w-32 rounded-md border border-[#C8CDDA] bg-[#F0F1FA] p-4">
-            <div className="whitespace-nowrap text-xs font-semibold tracking-wide text-[#4F5365] uppercase">
+        <div className="w-32 rounded-md border border-border bg-muted p-4">
+            <div className="text-xs font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase">
                 {label}
             </div>
             <div className="mt-3 text-3xl font-semibold">{value}</div>
@@ -372,12 +354,12 @@ function Kpi({ label, value }: { label: string; value: string }) {
 
 function EmptyState({ title, body }: { title: string; body: string }) {
     return (
-        <div className="mt-8 rounded-md border border-dashed border-[#C8CDDA] bg-white p-10 text-center">
+        <div className="mt-8 rounded-md border border-dashed border-border bg-card p-10 text-center">
             <div className="text-lg font-semibold">{title}</div>
-            <p className="mt-2 text-sm text-[#5F6373]">{body}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{body}</p>
             <Link
                 href="/browse"
-                className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-blue-700"
+                className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary"
             >
                 Browse listings
                 <ArrowRight className="size-4" />

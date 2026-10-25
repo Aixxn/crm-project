@@ -6,7 +6,7 @@ Staff manage Listings, Contacts, Inquiries, Viewings, Offers, Tasks, Notes, and 
 
 ## Current implementation
 
-The access and identity work in Phase 1 and the lifecycle work in Phase 2 are implemented locally and covered by automated tests.
+Access and identity (Phase 1), lifecycle (Phase 2), and compensated media plus versioned announcement delivery (Phase 3) are implemented locally and covered by automated tests. Phase 4's shared design foundation is implemented locally; browser visual acceptance remains open.
 
 - Shared visibility rules cover lists, details, related records, options, JSON responses, and dashboard metrics.
 - Registration creates a new User and Contact atomically. Email verification is enforced. Portal reads never claim an existing Contact by email.
@@ -17,7 +17,9 @@ The access and identity work in Phase 1 and the lifecycle work in Phase 2 are im
 - Public Viewing intake preserves buy/rent intent, normalizes offset-bearing times to UTC, and prevents duplicate active requests. Cancellation permits a deliberate new request.
 - Historical corrections require an administrator and a reason. Completed Tasks require an explicit reopen operation and reason.
 
-The next phase is **Phase 3: reliable media and announcements**. Upload compensation, durable announcement receipts, queued delivery, and replay recovery remain pending. See the [foundation roadmap](docs/foundation-roadmap.md) for all phases and completion gates.
+Listing intake compensates failed storage/database writes. The new v2 announcement endpoint adds durable receipts, queued delivery and replay recovery. External producer cutover remains unconfirmed; the legacy v1 endpoint keeps its synchronous HTTP 200 contract.
+
+Staff and portal screens now share appearance tokens, domain-aware status labels, formatting, empty states, and pagination. The portal uses one layout/header with mobile navigation. Appearance changes synchronize with system preferences and other tabs. Maintainers can change these shared behaviors without repeating fixes across pages. Phase 4 browser review has exercised representative staff and Buyer flows in both appearances at 375, 768, and 1280px. The 200% text-zoom acceptance check remains open because the connected browser did not apply the requested zoom. Phase 5 deployment readiness has not started. See the [foundation roadmap](docs/foundation-roadmap.md) for completion gates.
 
 ## Architecture and working rules
 
@@ -25,7 +27,7 @@ Start with [CONTEXT.md](CONTEXT.md) for domain terms and [AGENTS.md](AGENTS.md) 
 
 - [System architecture](docs/architecture.md) describes implemented behavior, module ownership, and remaining targets.
 - [Architecture decisions](docs/adr/README.md) records the accepted decisions.
-- [Design system](docs/design-system.md) defines the shared UI direction. Its broader migration remains pending.
+- [Design system](docs/design-system.md) records the shared UI foundation and its remaining visual acceptance checks.
 - [Foundation roadmap](docs/foundation-roadmap.md) records current verification and open work.
 - [Original validation record](docs/foundation-validation.md) preserves the October 22 review baseline.
 
@@ -49,7 +51,7 @@ The lifecycle migration supports SQLite and PostgreSQL syntax. Only SQLite has b
 | `laravel/app/Actions/` | Coordinated identity, intake, and lifecycle operations |
 | `laravel/app/Services/` | Shared visibility and portal identity rules |
 | `laravel/resources/js/` | Staff and portal pages, shared UI, and transport types |
-| `laravel/tests/` | PHPUnit feature and unit tests |
+| `laravel/tests/` | PHPUnit tests and Node frontend behavior/contrast tests |
 | `docs/` | Architecture, decisions, design system, and roadmap |
 | `design/` | Historical diagram references |
 
@@ -113,7 +115,18 @@ composer run dev
 
 This starts Laravel, Vite, a queue listener, and the log watcher. Open the local Laravel address printed by the command, normally `http://localhost:8000`.
 
-The existing listing-announcement notification is still synchronous. Starting a queue listener does not complete Phase 3's queued announcement delivery.
+The development listener consumes both `default` and `announcements`. For a dedicated announcement worker and recovery pass, run:
+
+```bash
+php artisan queue:work database --queue=announcements --tries=5
+php artisan announcements:recover
+```
+
+V2 uses `POST /webhooks/v2/listings/offered` with required `event_id` and `listing_id`, the existing raw-body HMAC headers and freshness tolerance. HTTP 202 returns a stable `receipt_id`; conflicting event identity returns 409. Legacy `POST /webhooks/listings/offered` retains optional event identity, synchronous HTTP 200 counts and its historical reliability limits. Confirm producer migration before retiring it. See the [versioned contract and failure behavior](docs/architecture.md#6-coordinated-writes-retries-and-errors).
+
+Recovery resubmits incomplete receipts after queue outages, worker interruptions or exhausted retries. Scheduling it regularly and supervising the announcement worker are production deployment work. V2 delivery is limited to verified Buyer Contacts without CRM access, and skips unavailable Listings at delivery. New accounts after acceptance are outside the receipt's frozen recipient watermark.
+
+Media cleanup compensates handled failures and nested database rollback. Cleanup failures log generated paths without customer payloads; abrupt process termination can still leave orphan files. No automatic orphan sweeper is included.
 
 ## Verify changes
 
@@ -122,6 +135,7 @@ Run from `laravel/`:
 ```bash
 php artisan test --compact
 vendor/bin/pint --dirty --format agent
+npm run test:frontend
 npm run types:check
 npm run lint:check
 npm run format:check
@@ -138,11 +152,15 @@ The combined `composer run ci:check` command does not include the frontend produ
 
 ### Latest recorded results
 
-On October 24, 2026, the full suite passed **305 tests and 2,153 assertions**. TypeScript, ESLint, Pint, changed-file frontend formatting, the production build, and `git diff --check` passed.
+On October 25, 2026 (Asia/Manila), verification passed **329 PHP tests and 2,374 assertions**, Pint, all three frontend test files, TypeScript, ESLint, resource formatting, and the production build. The build retains a main chunk size warning.
 
-Global `npm run format:check` still reports 14 untouched resource files. Browser visual verification for Phases 1 and 2 remains open because the isolated preview could not be reached and browser policy blocked the local-file fallback. Automated render tests do not replace that review.
+Frontend tests cover appearance synchronization and cleanup, domain status coverage, formatting, and 42 semantic contrast pairs across light and dark appearances. Browser checks covered staff lists and Listing intake/detail, Buyer Browse/property/My Home/Deal Tracker/settings, keyboard mobile menus, pending/validation/empty/success states, and Agent visibility denial.
 
-Production-engine verification, deployment provisioning, and the later roadmap phases remain open. No production migrations or real account repairs were performed during these checks.
+The review corrected homepage dark contrast, misleading static-property links, unavailable estimate/consultation controls, Browse status consistency, form labels, Inquiry/profile success feedback, offer activity currency, and fabricated staff photo/market controls. Example homepage properties are explicitly illustrative. Estimate, consultation, virtual-tour, and comparable-market features are not implemented.
+
+Verified test fixtures and test-only Buyer activity were created in the local database. Normal verification remains enforced. The browser acceptance gate remains open for the explicit 200% text-zoom check; keyboard shortcuts did not alter the reported scale.
+
+Production-engine verification, producer cutover, and Phase 5 deployment readiness remain open. No production migrations or real account repairs were performed during these checks.
 
 ## Troubleshooting
 

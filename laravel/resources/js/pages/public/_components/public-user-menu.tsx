@@ -33,12 +33,12 @@ export function PublicUserMenu({ user }: PublicUserMenuProps) {
             <DropdownMenuTrigger asChild>
                 <button
                     type="button"
-                    className="flex size-10 items-center justify-center rounded-full ring-1 ring-[#D8DCE8] transition hover:ring-blue-700"
+                    className="flex size-10 items-center justify-center rounded-full ring-1 ring-border transition hover:ring-primary"
                     aria-label="Open user menu"
                 >
                     <Avatar className="size-10 overflow-hidden rounded-full">
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback className="bg-blue-700 text-xs font-bold text-white">
+                        <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
                             {initials}
                         </AvatarFallback>
                     </Avatar>
@@ -46,12 +46,19 @@ export function PublicUserMenu({ user }: PublicUserMenuProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 rounded-md" align="end">
                 <DropdownMenuLabel className="font-normal">
-                    <div className="truncate text-sm font-semibold text-[#151826]">{user.name}</div>
-                    <div className="truncate text-xs text-[#6E7284]">{user.email}</div>
+                    <div className="truncate text-sm font-semibold text-foreground">
+                        {user.name}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                        {user.email}
+                    </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href="/portal/settings" className="w-full cursor-pointer">
+                    <Link
+                        href="/portal/settings"
+                        className="w-full cursor-pointer"
+                    >
                         <Settings className="mr-2 size-4" />
                         Settings
                     </Link>

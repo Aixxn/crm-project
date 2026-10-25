@@ -1,11 +1,11 @@
 import type { LifecycleOperation } from '@/types/lifecycle';
+import type { OfferStatus } from '@/types/workflow';
+export type { OfferStatus };
 import type {
     ContactOption,
     ListingOption,
     Paginated,
 } from '../workflow-support';
-
-export type OfferStatus = 'Submitted' | 'Accepted' | 'Rejected' | 'Withdrawn';
 
 export type OfferSummary = {
     id: string;

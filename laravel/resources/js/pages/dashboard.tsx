@@ -12,7 +12,12 @@ import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { dashboard } from '@/routes';
-import { formatDate, formatDateTime, money, StatusBadge } from './workflow-support';
+import {
+    formatDate,
+    formatDateTime,
+    money,
+    StatusBadge,
+} from './workflow-support';
 
 type DashboardProps = {
     kpis: {
@@ -107,15 +112,16 @@ export default function Dashboard({
     return (
         <>
             <Head title="Dashboard" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
+                            <h1 className="text-xl font-semibold text-foreground">
                                 Overview
                             </h1>
-                            <p className="mt-1 text-sm text-neutral-600">
-                                Today&apos;s listing pipeline and follow-up queue.
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Today&apos;s listing pipeline and follow-up
+                                queue.
                             </p>
                         </div>
                         <Button asChild>
@@ -133,15 +139,15 @@ export default function Dashboard({
                                 <Link
                                     key={item.key}
                                     href={item.href}
-                                    className="rounded-md border border-[#C3C6D7] bg-white p-4 transition hover:border-blue-300 hover:bg-blue-50/40"
+                                    className="rounded-md border border-border bg-card p-4 transition hover:border-status-info-border hover:bg-status-info/40"
                                 >
                                     <div className="flex items-center justify-between gap-3">
-                                        <div className="text-sm font-medium text-neutral-600">
+                                        <div className="text-sm font-medium text-muted-foreground">
                                             {item.label}
                                         </div>
-                                        <Icon className="size-4 text-blue-700" />
+                                        <Icon className="size-4 text-primary" />
                                     </div>
-                                    <div className="mt-3 text-2xl font-semibold text-neutral-950">
+                                    <div className="mt-3 text-2xl font-semibold text-foreground">
                                         {kpis[item.key]}
                                     </div>
                                 </Link>
@@ -150,13 +156,13 @@ export default function Dashboard({
                     </section>
 
                     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]">
-                        <section className="rounded-md border border-[#C3C6D7] bg-white">
-                            <div className="flex items-center justify-between gap-3 border-b border-[#C3C6D7]/70 px-4 py-3">
+                        <section className="rounded-md border border-border bg-card">
+                            <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
                                 <div>
-                                    <h2 className="text-sm font-semibold text-neutral-950">
+                                    <h2 className="text-sm font-semibold text-foreground">
                                         Active listing performance
                                     </h2>
-                                    <p className="mt-1 text-xs text-neutral-500">
+                                    <p className="mt-1 text-xs text-muted-foreground">
                                         Current listings with workflow counts.
                                     </p>
                                 </div>
@@ -169,43 +175,56 @@ export default function Dashboard({
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[780px] text-left text-sm">
-                                    <thead className="bg-neutral-50 text-xs font-medium text-neutral-500 uppercase">
+                                    <thead className="bg-muted text-xs font-medium text-muted-foreground uppercase">
                                         <tr>
-                                            <th className="px-4 py-3">Listing</th>
-                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3">
+                                                Listing
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                Status
+                                            </th>
                                             <th className="px-4 py-3">Price</th>
-                                            <th className="px-4 py-3">Inquiries</th>
-                                            <th className="px-4 py-3">Viewings</th>
-                                            <th className="px-4 py-3">Offers</th>
+                                            <th className="px-4 py-3">
+                                                Inquiries
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                Viewings
+                                            </th>
+                                            <th className="px-4 py-3">
+                                                Offers
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[#C3C6D7]/60">
+                                    <tbody className="divide-y divide-border/60">
                                         {activeListings.map((listing) => (
                                             <tr
                                                 key={listing.id}
-                                                className="hover:bg-[#FAF8FF]"
+                                                className="hover:bg-muted"
                                             >
                                                 <td className="px-4 py-4">
                                                     <Link
                                                         href={`/listings/${listing.id}`}
-                                                        className="font-medium text-neutral-950 hover:underline"
+                                                        className="font-medium text-foreground hover:underline"
                                                     >
                                                         {listing.address}
                                                     </Link>
                                                 </td>
                                                 <td className="px-4 py-4">
-                                                    <StatusBadge status={listing.status} />
+                                                    <StatusBadge
+                                                        domain="listing"
+                                                        status={listing.status}
+                                                    />
                                                 </td>
-                                                <td className="px-4 py-4 text-neutral-700">
+                                                <td className="px-4 py-4 text-foreground">
                                                     {money(listing.price)}
                                                 </td>
-                                                <td className="px-4 py-4 text-neutral-700">
+                                                <td className="px-4 py-4 text-foreground">
                                                     {listing.inquiries_count}
                                                 </td>
-                                                <td className="px-4 py-4 text-neutral-700">
+                                                <td className="px-4 py-4 text-foreground">
                                                     {listing.viewings_count}
                                                 </td>
-                                                <td className="px-4 py-4 text-neutral-700">
+                                                <td className="px-4 py-4 text-foreground">
                                                     {listing.offers_count}
                                                 </td>
                                             </tr>
@@ -218,21 +237,22 @@ export default function Dashboard({
                             )}
                         </section>
 
-                        <section className="rounded-md border border-[#C3C6D7] bg-white">
-                            <div className="border-b border-[#C3C6D7]/70 px-4 py-3">
-                                <h2 className="text-sm font-semibold text-neutral-950">
+                        <section className="rounded-md border border-border bg-card">
+                            <div className="border-b border-border/70 px-4 py-3">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Recent activity
                                 </h2>
-                                <p className="mt-1 text-xs text-neutral-500">
-                                    Latest listing, inquiry, offer, and note updates.
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Latest listing, inquiry, offer, and note
+                                    updates.
                                 </p>
                             </div>
-                            <div className="divide-y divide-[#C3C6D7]/60">
+                            <div className="divide-y divide-border/60">
                                 {recentActivity.map((activity) => (
                                     <Link
                                         key={`${activity.type}-${activity.href}-${activity.occurred_at}`}
                                         href={activity.href}
-                                        className="block px-4 py-3 hover:bg-[#FAF8FF]"
+                                        className="block px-4 py-3 hover:bg-muted"
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
@@ -241,18 +261,33 @@ export default function Dashboard({
                                                         {activity.type}
                                                     </Badge>
                                                     {activity.status && (
-                                                        <StatusBadge status={activity.status} />
+                                                        <StatusBadge
+                                                            domain={
+                                                                activity.type ===
+                                                                'Listing'
+                                                                    ? 'listing'
+                                                                    : activity.type ===
+                                                                        'Offer'
+                                                                      ? 'offer'
+                                                                      : 'inquiry'
+                                                            }
+                                                            status={
+                                                                activity.status
+                                                            }
+                                                        />
                                                     )}
                                                 </div>
-                                                <div className="mt-2 truncate text-sm font-medium text-neutral-950">
+                                                <div className="mt-2 truncate text-sm font-medium text-foreground">
                                                     {activity.title}
                                                 </div>
-                                                <div className="mt-1 text-xs text-neutral-500">
+                                                <div className="mt-1 text-xs text-muted-foreground">
                                                     {activity.subtitle}
                                                 </div>
                                             </div>
-                                            <div className="shrink-0 text-xs text-neutral-500">
-                                                {formatDate(activity.occurred_at)}
+                                            <div className="shrink-0 text-xs text-muted-foreground">
+                                                {formatDate(
+                                                    activity.occurred_at,
+                                                )}
                                             </div>
                                         </div>
                                     </Link>
@@ -274,17 +309,19 @@ export default function Dashboard({
                                 <Link
                                     key={viewing.id}
                                     href={`/viewings/${viewing.id}`}
-                                    className="grid gap-2 border-b border-[#C3C6D7]/60 px-4 py-3 last:border-b-0 hover:bg-[#FAF8FF] md:grid-cols-[1fr_auto]"
+                                    className="grid gap-2 border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-muted md:grid-cols-[1fr_auto]"
                                 >
                                     <div>
-                                        <div className="font-medium text-neutral-950">
-                                            {viewing.listing?.address ?? 'Viewing'}
+                                        <div className="font-medium text-foreground">
+                                            {viewing.listing?.address ??
+                                                'Viewing'}
                                         </div>
-                                        <div className="mt-1 text-xs text-neutral-500">
-                                            {contactName(viewing.contact)} with {viewing.agent?.name ?? 'agent'}
+                                        <div className="mt-1 text-xs text-muted-foreground">
+                                            {contactName(viewing.contact)} with{' '}
+                                            {viewing.agent?.name ?? 'agent'}
                                         </div>
                                     </div>
-                                    <div className="text-sm text-neutral-700">
+                                    <div className="text-sm text-foreground">
                                         {formatDateTime(viewing.scheduled_at)}
                                     </div>
                                 </Link>
@@ -303,20 +340,26 @@ export default function Dashboard({
                                 <Link
                                     key={task.id}
                                     href={`/tasks/${task.id}`}
-                                    className="grid gap-2 border-b border-[#C3C6D7]/60 px-4 py-3 last:border-b-0 hover:bg-[#FAF8FF] md:grid-cols-[1fr_auto]"
+                                    className="grid gap-2 border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-muted md:grid-cols-[1fr_auto]"
                                 >
                                     <div>
-                                        <div className="font-medium text-neutral-950">
+                                        <div className="font-medium text-foreground">
                                             {task.title}
                                         </div>
-                                        <div className="mt-1 text-xs text-neutral-500">
-                                            {task.assignee?.name ?? 'Unassigned'}
+                                        <div className="mt-1 text-xs text-muted-foreground">
+                                            {task.assignee?.name ??
+                                                'Unassigned'}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <StatusBadge status={task.status} />
-                                        <span className="text-sm text-neutral-700">
-                                            {task.due_date ? formatDate(task.due_date) : '-'}
+                                        <StatusBadge
+                                            domain="task"
+                                            status={task.status}
+                                        />
+                                        <span className="text-sm text-foreground">
+                                            {task.due_date
+                                                ? formatDate(task.due_date)
+                                                : '-'}
                                         </span>
                                     </div>
                                 </Link>
@@ -353,9 +396,9 @@ function QueueSection({
     children: ReactNode;
 }) {
     return (
-        <section className="rounded-md border border-[#C3C6D7] bg-white">
-            <div className="flex items-center justify-between gap-3 border-b border-[#C3C6D7]/70 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
+        <section className="rounded-md border border-border bg-card">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     {icon}
                     {title}
                 </div>
@@ -370,7 +413,7 @@ function QueueSection({
 
 function EmptyPanel({ message }: { message: string }) {
     return (
-        <div className="px-4 py-10 text-center text-sm text-neutral-600">
+        <div className="px-4 py-10 text-center text-sm text-muted-foreground">
             {message}
         </div>
     );

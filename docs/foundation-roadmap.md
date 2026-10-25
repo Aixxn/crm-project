@@ -2,7 +2,7 @@
 
 Reviewed 2026-10-22 against local `ad7138c87d47a038ce3a2476d8c0fc35e6009ef4` and GitHub main `0ec9ce8a2c83f4d4e30747726c59421917a345ae`. Local main has two later housekeeping commits. The local working tree also has pre-existing changes to `DatabaseSeeder.php` and `RbacPermissionTest.php`; this review does not overwrite them.
 
-Phase 1 runtime implementation was delivered locally on 2026-10-23, with 195 passing tests and 1,788 assertions at that checkpoint. Phase 2 lifecycle and atomic public intake are delivered locally on 2026-10-24. The current full Laravel suite passes 305 tests and 2,153 assertions. TypeScript, ESLint, PHP formatting, changed-file frontend formatting, and the frontend production build pass. The global frontend format check reports 14 untouched baseline files. Browser visual verification for both phases remains blocked because the connected browser cannot reach the isolated preview and its URL policy rejects the local-file fallback. Production database selection and engine verification remain open. Phases 3 through 5 remain pending. The [architecture](architecture.md) distinguishes implemented behavior from remaining targets, and [validation](foundation-validation.md) records the original review baseline.
+Phase 1 runtime implementation was delivered locally on 2026-10-23, with 195 passing tests and 1,788 assertions at that checkpoint. Phase 2 lifecycle and atomic public intake are delivered locally on 2026-10-24. Phase 3 media compensation and versioned announcement delivery are implemented locally; external producer cutover remains unconfirmed. The PHP baseline passes 328 tests and 2,365 assertions (2026-10-25 Asia/Manila). Phase 4's shared UI foundation is implemented locally. Frontend behavior/contrast tests, TypeScript, ESLint, global resource formatting, and the production build pass. Browser access now works. Representative staff and Buyer flows have been reviewed; the explicit 200% text-zoom acceptance check remains unverified. Phase 5, including production database selection and engine verification, has not started. The [architecture](architecture.md) distinguishes implemented behavior from remaining targets, and [validation](foundation-validation.md) records the original review baseline.
 
 ## Evidence and priority
 
@@ -63,23 +63,30 @@ Local implementation evidence (2026-10-24): the transition matrix, atomic histor
 
 ## Phase 3 — Reliable media and announcements
 
-- [ ] Stage uploads and compensate failed media writes; test both storage and database failures.
-- [ ] Confirm/update the external producer contract before requiring event IDs and changing receipt responses.
-- [ ] Add durable announcement receipt/dispatch/delivery records with uniqueness; implement replay/payload-conflict behavior.
-- [ ] Queue bounded fan-out after commit, recover partial deliveries, and test interruption/concurrent replay.
-- [ ] Narrow the webhook CSRF exception, add an appropriate route limiter, and retain raw-body HMAC/freshness checks.
+- [x] Stage uploads and compensate failed media writes; test both storage and database failures.
+- [ ] Confirm external producer cutover to v2. The existing v1 route retains optional event IDs and its HTTP 200 synchronous count; v2 requires stable identity and returns a durable HTTP 202 receipt.
+- [x] Add durable announcement receipt/dispatch/delivery records with uniqueness; implement replay/payload-conflict behavior.
+- [x] Queue bounded fan-out after commit, recover partial deliveries, and test interruption/concurrent replay.
+- [x] Narrow the webhook CSRF exception, add an appropriate route limiter, and retain raw-body HMAC/freshness checks.
 
 Exit gate: failure/retry behavior is observable, duplicate notifications are prevented under concurrency, and the worker is actually exercised.
 
+Local implementation evidence (2026-10-25): `CreateListing` privately stages uniquely owned files, promotes before commit, and compensates partial storage writes plus Contact/Listing/history/media rollback. Tests exercise false and throwing storage failures, multi-image failure, cleanup/logging failure, retry and ancestor rollbacks. Crash-orphan cleanup remains an operational limitation.
+
+The additive v2 endpoint persists canonical producer/event identity, frozen public notification data, dispatch intent and a maximum User ID. Database workers process at most 50 Users per chunk and commit notifications, terminal delivery markers and cursor advancement together. Actual `queue:work database --queue=announcements --once` tests use isolated file SQLite. Lost continuation, queue outage after commit, failed-recipient rollback, read/deletion preservation, late-account exclusion, custom staff omission and concurrent receipt/delivery processes are covered. `php artisan announcements:recover` reschedules incomplete receipts. Development workers consume both default and announcements queues. V1 retains its historical synchronous notification-based deduplication limits; external cutover and production-engine verification remain open. No real customer notifications were sent.
+
+
 ## Phase 4 — Shared design foundation
 
-- [ ] Implement the semantic token roles and correct dark contrast pairs without renaming established semantics arbitrarily.
-- [ ] Extract shared status/formatting/types from the page utility module with temporary re-exports; cover all domain statuses.
-- [ ] Migrate Listings index/create/detail as the reference staff slice, including the updated Contact intake behavior.
-- [ ] Reuse these patterns for customer activity/dashboard; consolidate portal header/layout and migrate browse/property/intake.
-- [ ] Verify both appearances, keyboard access, responsive tables/forms, and pending/error/empty states. Delete old exports/literals only after callers migrate.
+- [x] Implement the semantic token roles and correct dark contrast pairs without renaming established semantics arbitrarily.
+- [x] Extract shared status/formatting/types from the page utility module with temporary re-exports; cover all domain statuses.
+- [x] Migrate Listings index/create/detail as the reference staff slice, including the updated Contact intake behavior.
+- [x] Reuse these patterns for customer activity/dashboard; consolidate portal header/layout and migrate browse/property/intake.
+- [ ] Verify both appearances, keyboard access, responsive tables/forms, and pending/error/empty states in a browser. Compatibility exports remain while existing callers use them.
 
-Exit gate: reference screens consume semantic tokens and shared patterns; type/lint/format/build checks and visual review pass. Existing visual differences alone do not justify a full rewrite.
+Exit gate: reference screens consume semantic tokens and shared patterns; type/lint/format/build checks and browser visual review pass. Automated checks pass locally; browser review remains open. Existing visual differences alone do not justify a full rewrite.
+
+Local implementation evidence (2026-10-25 Asia/Manila): all current Listing, Inquiry, Viewing, Offer, and Task statuses resolve through one typed domain registry. The shared formatters use en-PH/PHP and Asia/Manila, while date-only values retain their displayed calendar date. Appearance subscribers update when system light/dark resolution changes, external storage changes apply, and HMR cleanup is idempotent. Shared tokens include matched light/dark foregrounds, status pairs, focus/input roles, sidebar roles, and photo-overlay roles. Listings, Contacts, customer activity, Dashboard, and the public portal use the shared status, empty-state, pagination, and formatting modules where applicable. The public portal uses one layout/header with a keyboard-operable mobile menu and appearance toggle. `npm run test:frontend`, `npm run types:check`, `npm run lint:check`, `npm run format:check`, and `npm run build` passed. Browser follow-up (2026-10-25 Asia/Manila): verified local Admin, Agent and Buyer fixtures preserve normal email verification. Reviewed staff lists, Listing intake and detail, portal Browse/property/My Home/Deal Tracker/settings, both appearances, and representative 375/768/1280px layouts. Browser actions exercised disabled pending states, required-field validation, saved-property persistence, successful Inquiry and Viewing intake, profile-save feedback, mobile keyboard menus, Agent empty scope and a denied Listing detail. Fixed homepage dark surfaces, misleading example-card links and unavailable actions, Browse status/labels, Listing input names, portal settings labels/feedback, Inquiry success feedback, dashboard offer currency, and fabricated staff photo/market controls. Final verification passed 329 PHP tests with 2,374 assertions, all three frontend test files, TypeScript, ESLint, resource formatting, Pint, and the production build (exit 0). Vite retains its large-chunk warning. Test-only Buyer activity remains in the local database. The explicit 200% text-zoom check is still open: browser keyboard shortcuts did not alter the reported scale. Do not mark the browser acceptance checkbox complete until that check is demonstrated.
 
 ## Phase 5 — Deployment readiness
 

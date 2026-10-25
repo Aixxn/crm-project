@@ -113,7 +113,10 @@ export function ListingForm({
                             setData('status', value as ListingStatus)
                         }
                     >
-                        <SelectTrigger className="w-full border-border bg-card">
+                        <SelectTrigger
+                            aria-label="Status"
+                            className="w-full border-input bg-card"
+                        >
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -137,7 +140,10 @@ export function ListingForm({
                             setData('assigned_agent_id', value)
                         }
                     >
-                        <SelectTrigger className="w-full border-border bg-card">
+                        <SelectTrigger
+                            aria-label="Assigned agent"
+                            className="w-full border-input bg-card"
+                        >
                             <SelectValue placeholder="Select agent" />
                         </SelectTrigger>
                         <SelectContent>
@@ -161,7 +167,10 @@ export function ListingForm({
                             setData('owner_contact_id', value)
                         }
                     >
-                        <SelectTrigger className="w-full border-border bg-card">
+                        <SelectTrigger
+                            aria-label="Owner contact"
+                            className="w-full border-input bg-card"
+                        >
                             <SelectValue placeholder="Select owner" />
                         </SelectTrigger>
                         <SelectContent>
@@ -176,7 +185,7 @@ export function ListingForm({
 
                 <Field label="Property type" error={errors.property_type}>
                     <Input
-                        className="border-border bg-card"
+                        className="border-input bg-card"
                         value={data.property_type}
                         onChange={(event) =>
                             setData('property_type', event.target.value)
@@ -210,7 +219,7 @@ export function ListingForm({
                 <div className="space-y-4">
                     <Field label="Address" error={errors.address}>
                         <Input
-                            className="border-border bg-card"
+                            className="border-input bg-card"
                             value={data.address}
                             onChange={(event) =>
                                 setData('address', event.target.value)
@@ -222,7 +231,7 @@ export function ListingForm({
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <Field label="Price" error={errors.price}>
                             <Input
-                                className="border-border bg-card"
+                                className="border-input bg-card"
                                 type="number"
                                 min="0"
                                 step="0.01"
@@ -235,7 +244,7 @@ export function ListingForm({
 
                         <Field label="Bedrooms" error={errors.bedrooms}>
                             <Input
-                                className="border-border bg-card"
+                                className="border-input bg-card"
                                 type="number"
                                 min="0"
                                 value={data.bedrooms}
@@ -247,7 +256,7 @@ export function ListingForm({
 
                         <Field label="Bathrooms" error={errors.bathrooms}>
                             <Input
-                                className="border-border bg-card"
+                                className="border-input bg-card"
                                 type="number"
                                 min="0"
                                 step="0.5"
@@ -260,7 +269,7 @@ export function ListingForm({
 
                         <Field label="Area sqft" error={errors.area_sqft}>
                             <Input
-                                className="border-border bg-card"
+                                className="border-input bg-card"
                                 type="number"
                                 min="0"
                                 value={data.area_sqft}
@@ -274,9 +283,9 @@ export function ListingForm({
                     {!isEditing && (
                         <Field label="Listing images" error={errors.images}>
                             <div className="rounded-md border border-dashed border-border bg-card p-4">
-                                <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-sm bg-[#eef1fb] px-4 text-center text-sm text-[#596071] hover:bg-[#e5e9f7]">
-                                    <ImagePlus className="mb-3 size-8 text-blue-700" />
-                                    <span className="font-medium text-[#1f2330]">
+                                <div className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-sm bg-muted px-4 text-center text-sm text-muted-foreground hover:bg-muted/80">
+                                    <ImagePlus className="mb-3 size-8 text-primary" />
+                                    <span className="font-medium text-foreground">
                                         Upload up to 3 photos
                                     </span>
                                     <span className="mt-1">
@@ -291,13 +300,13 @@ export function ListingForm({
                                             updateImages(event.target.files)
                                         }
                                     />
-                                </label>
+                                </div>
                                 {data.images.length > 0 && (
                                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                                         {data.images.map((image, index) => (
                                             <div
                                                 key={`${image.name}-${index}`}
-                                                className="flex items-center justify-between gap-2 rounded-sm border border-border px-3 py-2 text-sm text-[#303545]"
+                                                className="flex items-center justify-between gap-2 rounded-sm border border-border px-3 py-2 text-sm text-foreground"
                                             >
                                                 <span className="truncate">
                                                     {image.name}
@@ -307,7 +316,7 @@ export function ListingForm({
                                                     onClick={() =>
                                                         removeImage(index)
                                                     }
-                                                    className="text-[#596071] hover:text-destructive"
+                                                    className="text-muted-foreground hover:text-destructive"
                                                     aria-label={`Remove ${image.name}`}
                                                 >
                                                     <X className="size-4" />
@@ -316,7 +325,7 @@ export function ListingForm({
                                         ))}
                                     </div>
                                 )}
-                                <div className="mt-3 text-xs text-[#596071]">
+                                <div className="mt-3 text-xs text-muted-foreground">
                                     If more than 3 files are selected, only the
                                     first 3 will be uploaded.
                                 </div>
@@ -326,25 +335,25 @@ export function ListingForm({
                 </div>
 
                 <div className="rounded-md border border-border bg-card p-4">
-                    <div className="text-sm font-semibold text-[#1f2330]">
+                    <div className="text-sm font-semibold text-foreground">
                         Listing setup
                     </div>
                     <dl className="mt-4 space-y-3 text-sm">
                         <div className="flex items-center justify-between gap-4">
-                            <dt className="text-[#596071]">Mode</dt>
-                            <dd className="font-medium text-[#1f2330]">
+                            <dt className="text-muted-foreground">Mode</dt>
+                            <dd className="font-medium text-foreground">
                                 {isEditing ? 'Edit' : 'Create'}
                             </dd>
                         </div>
                         <div className="flex items-center justify-between gap-4">
-                            <dt className="text-[#596071]">Agents</dt>
-                            <dd className="font-medium text-[#1f2330]">
+                            <dt className="text-muted-foreground">Agents</dt>
+                            <dd className="font-medium text-foreground">
                                 {agents.length}
                             </dd>
                         </div>
                         <div className="flex items-center justify-between gap-4">
-                            <dt className="text-[#596071]">Owners</dt>
-                            <dd className="font-medium text-[#1f2330]">
+                            <dt className="text-muted-foreground">Owners</dt>
+                            <dd className="font-medium text-foreground">
                                 {owners.length}
                             </dd>
                         </div>
@@ -362,11 +371,11 @@ export function ListingForm({
                 />
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-[#f7f5fc] px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background px-6 py-4">
                 <Button
                     variant="outline"
                     asChild
-                    className="rounded-sm border-border bg-card text-[#303545] hover:bg-[#eef1fb]"
+                    className="rounded-sm border-border bg-card text-foreground hover:bg-muted"
                 >
                     <Link
                         href={
@@ -380,7 +389,7 @@ export function ListingForm({
                 <Button
                     type="submit"
                     disabled={processing}
-                    className="rounded-sm bg-blue-700 text-white hover:bg-blue-800"
+                    className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                     <Save />
                     {processing ? 'Saving' : 'Save listing'}
@@ -401,12 +410,17 @@ function Field({
 }) {
     return (
         <div className="space-y-2">
-            <Label className="text-sm font-medium text-[#303545]">
+            <Label className="grid gap-2 text-sm font-medium text-foreground">
                 {label}
+                {children}
             </Label>
-            {children}
             {error && (
-                <p className="text-xs font-medium text-destructive">{error}</p>
+                <p
+                    role="alert"
+                    className="text-xs font-medium text-destructive"
+                >
+                    {error}
+                </p>
             )}
         </div>
     );

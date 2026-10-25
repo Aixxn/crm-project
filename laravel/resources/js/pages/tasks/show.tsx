@@ -20,15 +20,18 @@ export default function ShowTask({ task }: { task: TaskSummary }) {
     return (
         <>
             <Head title={task.title} />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
+                            <h1 className="text-xl font-semibold text-foreground">
                                 {task.title}
                             </h1>
                             <div className="mt-2">
-                                <StatusBadge status={task.status} />
+                                <StatusBadge
+                                    domain="task"
+                                    status={task.status}
+                                />
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -52,29 +55,30 @@ export default function ShowTask({ task }: { task: TaskSummary }) {
                     </div>
                 </div>
                 <div className="grid gap-4 p-4 md:grid-cols-3 md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-medium text-neutral-500">
+                    <section className="rounded-md border border-border bg-card p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                             <Calendar className="size-4" />
                             Due date
                         </div>
-                        <div className="mt-3 text-lg font-semibold text-neutral-950">
+                        <div className="mt-3 text-lg font-semibold text-foreground">
                             {task.due_date ? formatDate(task.due_date) : '-'}
                         </div>
                     </section>
-                    <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-medium text-neutral-500">
+                    <section className="rounded-md border border-border bg-card p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                             <UserRound className="size-4" />
                             Assignee
                         </div>
-                        <div className="mt-3 text-lg font-semibold text-neutral-950">
+                        <div className="mt-3 text-lg font-semibold text-foreground">
                             {task.assignee?.name ?? '-'}
                         </div>
                     </section>
-                    <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                        <div className="text-sm font-medium text-neutral-500">
-                            Related {relatedEntityKind(task.related_entity_type)}
+                    <section className="rounded-md border border-border bg-card p-4">
+                        <div className="text-sm font-medium text-muted-foreground">
+                            Related{' '}
+                            {relatedEntityKind(task.related_entity_type)}
                         </div>
-                        <div className="mt-3 text-lg font-semibold text-neutral-950">
+                        <div className="mt-3 text-lg font-semibold text-foreground">
                             {relatedEntityLabel(
                                 task.related_entity_type,
                                 task.related_entity_id,

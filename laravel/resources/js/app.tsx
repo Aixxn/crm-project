@@ -38,5 +38,8 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on load...
-initializeTheme();
+const cleanupTheme = initializeTheme();
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(cleanupTheme);
+}

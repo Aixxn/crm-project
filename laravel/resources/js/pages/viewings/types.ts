@@ -1,17 +1,12 @@
 import type { LifecycleOperation } from '@/types/lifecycle';
+import type { ViewingStatus } from '@/types/workflow';
+export type { ViewingStatus };
 import type {
     AgentOption,
     ContactOption,
     ListingOption,
     Paginated,
 } from '../workflow-support';
-
-export type ViewingStatus =
-    | 'Requested'
-    | 'Scheduled'
-    | 'Completed'
-    | 'No Show'
-    | 'Cancelled';
 
 export type ViewingSummary = {
     id: string;

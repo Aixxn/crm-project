@@ -74,13 +74,13 @@ export function ViewingForm({
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid gap-4 border-b border-[#C3C6D7]/70 bg-white px-4 py-5 md:grid-cols-2 md:px-6 lg:grid-cols-4">
+            <div className="grid gap-4 border-b border-border/70 bg-card px-4 py-5 md:grid-cols-2 md:px-6 lg:grid-cols-4">
                 <Field label="Listing" error={errors.listing_id}>
                     <Select
                         value={data.listing_id}
                         onValueChange={(value) => setData('listing_id', value)}
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select listing" />
                         </SelectTrigger>
                         <SelectContent>
@@ -97,7 +97,7 @@ export function ViewingForm({
                         value={data.contact_id}
                         onValueChange={(value) => setData('contact_id', value)}
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select contact" />
                         </SelectTrigger>
                         <SelectContent>
@@ -114,7 +114,7 @@ export function ViewingForm({
                         value={data.agent_id}
                         onValueChange={(value) => setData('agent_id', value)}
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select agent" />
                         </SelectTrigger>
                         <SelectContent>
@@ -136,7 +136,7 @@ export function ViewingForm({
                             setData('status', value as ViewingStatus)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -183,7 +183,7 @@ export function ViewingForm({
                 />
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-card px-4 py-4 md:px-6">
                 <Button variant="outline" asChild>
                     <Link
                         href={
@@ -217,7 +217,7 @@ function Field({
             <Label>{label}</Label>
             {children}
             {error && (
-                <p className="text-xs font-medium text-red-600">{error}</p>
+                <p className="text-xs font-medium text-destructive">{error}</p>
             )}
         </div>
     );

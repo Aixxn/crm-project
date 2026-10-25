@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
-        $middleware->preventRequestForgery(except: ['webhooks/*']);
+        $middleware->preventRequestForgery(except: ['webhooks/listings/offered', 'webhooks/v2/listings/offered']);
 
         $middleware->web(append: [
             HandleAppearance::class,

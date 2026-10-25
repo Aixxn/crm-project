@@ -1,6 +1,6 @@
 # ADR 0004: Share token meaning and visual patterns across CRM and portal
 
-Date: 2026-10-22. Status: accepted direction; migration pending.
+Date: 2026-10-22. Status: accepted; shared tokens and Phase 4 screen migrations are implemented locally, with visual acceptance pending.
 
 ## Context
 
@@ -18,4 +18,4 @@ Theme and accessibility fixes gain leverage across screens. The migration starts
 
 ## Verification
 
-Type/lint/format/build checks accompany the migration. Review light/dark/system behavior, every status, keyboard/focus behavior, validation, pending/error/empty states, responsive layout and contrast. A PHP render assertion is not a visual acceptance test.
+The local implementation is covered by Node behavior tests for status coverage, formatting, appearance synchronization, and semantic token contrast, plus the installed type, lint, format, and production build commands. Browser review of light/dark/system rendering, 375/768/1280px layouts, keyboard/focus behavior, and image-overlay legibility remains pending because the local preview server is unavailable. A PHP render assertion is not a visual acceptance test.

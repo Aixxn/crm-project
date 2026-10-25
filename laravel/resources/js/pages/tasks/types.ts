@@ -1,11 +1,11 @@
 import type { LifecycleOperation } from '@/types/lifecycle';
+import type { TaskStatus } from '@/types/workflow';
+export type { TaskStatus };
 import type {
     AgentOption,
     Paginated,
     RelatedEntityOption,
 } from '../workflow-support';
-
-export type TaskStatus = 'Open' | 'In Progress' | 'Done';
 
 export type TaskSummary = {
     id: string;

@@ -96,6 +96,19 @@ class DashboardTest extends TestCase
             );
     }
 
+    public function test_offer_activity_displays_agency_currency(): void
+    {
+        $admin = $this->adminUser();
+        Offer::factory()->create(['amount' => '30500000.00']);
+
+        $this->actingAs($admin)->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('recentActivity', fn ($items) => collect($items)
+                    ->contains(fn ($item) => $item['type'] === 'Offer' && $item['subtitle'] === '₱30,500,000'))
+            );
+    }
+
     public function test_dashboard_is_scoped_to_agent_assigned_listings(): void
     {
         $agent = User::factory()->create();

@@ -45,7 +45,7 @@ export function ContactForm({ contact }: ContactFormProps) {
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid gap-4 border-b border-[#C3C6D7]/70 bg-white px-4 py-5 md:grid-cols-3 md:px-6">
+            <div className="grid gap-4 border-b border-border/70 bg-card px-4 py-5 md:grid-cols-3 md:px-6">
                 <Field label="Role" error={errors.role}>
                     <Select
                         value={data.role}
@@ -53,7 +53,7 @@ export function ContactForm({ contact }: ContactFormProps) {
                             setData('role', value as ContactRole)
                         }
                     >
-                        <SelectTrigger className="w-full bg-white">
+                        <SelectTrigger className="w-full bg-card">
                             <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -124,8 +124,8 @@ export function ContactForm({ contact }: ContactFormProps) {
                     </Field>
                 </div>
 
-                <div className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                    <div className="text-sm font-medium text-neutral-950">
+                <div className="rounded-md border border-border bg-card p-4">
+                    <div className="text-sm font-medium text-foreground">
                         Contact state
                     </div>
                     <dl className="mt-4 space-y-3 text-sm">
@@ -145,7 +145,7 @@ export function ContactForm({ contact }: ContactFormProps) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 bg-white px-4 py-4 md:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-card px-4 py-4 md:px-6">
                 <Button variant="outline" asChild>
                     <Link
                         href={
@@ -179,7 +179,7 @@ function Field({
             <Label>{label}</Label>
             {children}
             {error && (
-                <p className="text-xs font-medium text-red-600">{error}</p>
+                <p className="text-xs font-medium text-destructive">{error}</p>
             )}
         </div>
     );
@@ -188,8 +188,8 @@ function Field({
 function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
     return (
         <div className="flex items-center justify-between gap-4">
-            <dt className="text-neutral-500">{label}</dt>
-            <dd className="text-right font-medium text-neutral-900">{value}</dd>
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="text-right font-medium text-foreground">{value}</dd>
         </div>
     );
 }

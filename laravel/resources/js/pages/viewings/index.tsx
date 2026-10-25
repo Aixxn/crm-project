@@ -63,14 +63,14 @@ export default function ViewingIndex({
     return (
         <>
             <Head title="Viewings" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
+                            <h1 className="text-xl font-semibold text-foreground">
                                 Viewings
                             </h1>
-                            <p className="mt-1 text-sm text-neutral-600">
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 {paginated.total} scheduled or completed
                                 property viewings.
                             </p>
@@ -84,10 +84,10 @@ export default function ViewingIndex({
                     </div>
                 </div>
                 <div className="p-4 md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white">
-                        <div className="grid gap-3 border-b border-[#C3C6D7]/70 p-3 md:grid-cols-[12rem_minmax(0,1fr)_auto]">
+                    <section className="rounded-md border border-border bg-card">
+                        <div className="grid gap-3 border-b border-border/70 p-3 md:grid-cols-[12rem_minmax(0,1fr)_auto]">
                             <Select value={status} onValueChange={setStatus}>
-                                <SelectTrigger className="w-full bg-white">
+                                <SelectTrigger className="w-full bg-card">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -102,7 +102,7 @@ export default function ViewingIndex({
                                 value={listingId}
                                 onValueChange={setListingId}
                             >
-                                <SelectTrigger className="w-full bg-white">
+                                <SelectTrigger className="w-full bg-card">
                                     <SelectValue placeholder="Listing" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -126,7 +126,7 @@ export default function ViewingIndex({
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[860px] text-left text-sm">
-                                <thead className="bg-neutral-50 text-xs font-medium text-neutral-500 uppercase">
+                                <thead className="bg-muted text-xs font-medium text-muted-foreground uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Viewing</th>
                                         <th className="px-4 py-3">Status</th>
@@ -138,29 +138,29 @@ export default function ViewingIndex({
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#C3C6D7]/60">
+                                <tbody className="divide-y divide-border/60">
                                     {paginated.data.map((viewing) => (
                                         <tr
                                             key={viewing.id}
-                                            className="bg-white hover:bg-[#FAF8FF]"
+                                            className="bg-card hover:bg-muted"
                                         >
                                             <td className="px-4 py-4">
                                                 <div className="flex gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#C3C6D7] bg-[#FAF8FF]">
-                                                        <CalendarClock className="size-4 text-neutral-700" />
+                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
+                                                        <CalendarClock className="size-4 text-foreground" />
                                                     </div>
                                                     <div>
                                                         <Link
                                                             href={viewings.show(
                                                                 viewing,
                                                             )}
-                                                            className="font-medium text-neutral-950 hover:underline"
+                                                            className="font-medium text-foreground hover:underline"
                                                         >
                                                             {formatDateTime(
                                                                 viewing.scheduled_at,
                                                             )}
                                                         </Link>
-                                                        <div className="mt-1 text-xs text-neutral-500">
+                                                        <div className="mt-1 text-xs text-muted-foreground">
                                                             Scheduled
                                                             appointment
                                                         </div>
@@ -169,17 +169,18 @@ export default function ViewingIndex({
                                             </td>
                                             <td className="px-4 py-4">
                                                 <StatusBadge
+                                                    domain="viewing"
                                                     status={viewing.status}
                                                 />
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
+                                            <td className="px-4 py-4 text-foreground">
                                                 {viewing.listing?.address ??
                                                     '-'}
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
+                                            <td className="px-4 py-4 text-foreground">
                                                 {contactName(viewing.contact)}
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
+                                            <td className="px-4 py-4 text-foreground">
                                                 {viewing.agent?.name ?? '-'}
                                             </td>
                                             <td className="px-4 py-4">
@@ -220,7 +221,7 @@ export default function ViewingIndex({
                             </table>
                         </div>
                         {paginated.data.length === 0 && (
-                            <div className="px-4 py-14 text-center text-sm text-neutral-600">
+                            <div className="px-4 py-14 text-center text-sm text-muted-foreground">
                                 No viewings match the current filters.
                             </div>
                         )}

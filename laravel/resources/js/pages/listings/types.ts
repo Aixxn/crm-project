@@ -1,13 +1,8 @@
 import type { User } from '@/types';
 import type { LifecycleOperation } from '@/types/lifecycle';
+import type { ListingStatus } from '@/types/workflow';
+export type { ListingStatus };
 import type { NewContactInput } from '../contacts/types';
-
-export type ListingStatus =
-    | 'Draft'
-    | 'Active'
-    | 'Under Offer'
-    | 'Closed'
-    | 'Closed Lost';
 
 export type ContactSummary = {
     id: string;

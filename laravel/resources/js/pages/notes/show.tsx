@@ -19,14 +19,14 @@ export default function ShowNote({ note }: { note: NoteSummary }) {
     return (
         <>
             <Head title="Note Detail" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
+                            <h1 className="text-xl font-semibold text-foreground">
                                 Note detail
                             </h1>
-                            <p className="mt-1 text-sm text-neutral-600">
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 {formatDateTime(note.created_at)}
                             </p>
                         </div>
@@ -51,30 +51,31 @@ export default function ShowNote({ note }: { note: NoteSummary }) {
                     </div>
                 </div>
                 <div className="grid gap-4 p-4 md:grid-cols-[2fr_1fr] md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-medium text-neutral-500">
+                    <section className="rounded-md border border-border bg-card p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                             <FileText className="size-4" />
                             Note
                         </div>
-                        <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-neutral-800">
+                        <p className="mt-4 text-sm leading-6 whitespace-pre-wrap text-foreground">
                             {note.body}
                         </p>
                     </section>
                     <aside className="space-y-4">
-                        <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                            <div className="flex items-center gap-2 text-sm font-medium text-neutral-500">
+                        <section className="rounded-md border border-border bg-card p-4">
+                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                                 <UserRound className="size-4" />
                                 Author
                             </div>
-                            <div className="mt-3 text-lg font-semibold text-neutral-950">
+                            <div className="mt-3 text-lg font-semibold text-foreground">
                                 {note.author?.name ?? '-'}
                             </div>
                         </section>
-                        <section className="rounded-md border border-[#C3C6D7] bg-white p-4">
-                            <div className="text-sm font-medium text-neutral-500">
-                                Related {relatedEntityKind(note.related_entity_type)}
+                        <section className="rounded-md border border-border bg-card p-4">
+                            <div className="text-sm font-medium text-muted-foreground">
+                                Related{' '}
+                                {relatedEntityKind(note.related_entity_type)}
                             </div>
-                            <div className="mt-3 text-lg font-semibold text-neutral-950">
+                            <div className="mt-3 text-lg font-semibold text-foreground">
                                 {relatedEntityLabel(
                                     note.related_entity_type,
                                     note.related_entity_id,

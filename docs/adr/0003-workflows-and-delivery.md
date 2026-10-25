@@ -1,6 +1,6 @@
 # ADR 0003: Coordinate business writes and durable announcement delivery
 
-Date: 2026-10-22. Status: accepted direction; Phase 2 lifecycle/public intake implemented locally on 2026-10-24. Phase 3 media and announcement delivery remain pending.
+Date: 2026-10-22. Status: accepted direction; Phase 2 lifecycle/public intake implemented locally on 2026-10-24. Phase 3 compensated media and versioned announcement delivery implemented locally on 2026-10-25; external producer cutover remains unconfirmed.
 
 ## Context
 
@@ -28,4 +28,14 @@ Test transitions, competing acceptance/closure, stable monthly KPIs, Viewing rol
 
 `Actions/Lifecycle/ChangeRecord` owns the transition table, transactional authorization rechecks, parent Listing locking, Offer side effects, closure timestamp and atomic history. Public Inquiry and Viewing intake have dedicated coordinated actions. Partial unique indexes enforce one Accepted Offer per Listing (including deleted Offers) and one active Viewing time per Listing/Contact. Migration preflight rejects conflicting existing rows without repairing them; unknown legacy closure dates remain null.
 
-SQLite is the demonstrated local engine. Process tests use an isolated file database with application SQLite options for competing acceptance and equivalent-offset Viewing requests. PostgreSQL SQL support is provisioned but unverified; other engines fail migration explicitly. Production engine verification remains a Phase 5 gate. Browser validation remains blocked by the local preview server and browser local-file URL policy. Media compensation, durable webhook receipts and queued fan-out are still Phase 3 work.
+SQLite is the demonstrated local engine. Process tests use an isolated file database with application SQLite options for competing acceptance and equivalent-offset Viewing requests. PostgreSQL SQL support is provisioned but unverified; other engines fail migration explicitly. Production engine verification remains a Phase 5 gate. Browser validation remains blocked by the local preview server and browser local-file URL policy. Phase 3 implementation and verification are recorded below.
+
+## Local Phase 3 implementation
+
+`CreateListing` stages uploads on private storage, promotes unique owned files before the Listing transaction commits, and compensates partial writes plus owner/Listing/history/media rollback. Ancestor rollback callbacks cover committed savepoints; cleanup never interrupts rollback when storage or logging fails. No filesystem transaction retry is used. Crash-orphan cleanup and durable shared storage remain operational limits.
+
+The unknown external producer keeps its v1 route and HTTP 200 synchronous count. V2 adds the stable event-ID requirement and HTTP 202 receipt without breaking v1. Canonical validated event/Listing identity accepts reordered JSON and rejects reused identity with changed meaning. Replay returns the original receipt even after publication changes. Producer cutover is an open rollout gate.
+
+Two additive tables hold receipt/outbox progress and unique terminal recipient outcomes. Database queue jobs process bounded 50-User chunks under receipt write intent, freeze the maximum User ID at acceptance, and commit notification insertion with delivery markers and cursor progress. An initial write avoids deferred SQLite read-to-write upgrade contention observed in the competing-process test. Notification UUIDs derive from receipt and recipient identity. Read/deleted notifications are not recreated. Eligibility excludes all CRM-capable staff, including custom roles, and publication is rechecked before delivery.
+
+Queue submission is after commit and failures preserve durable recovery intent. `announcements:recover` resubmits incomplete receipts regardless of prior queue state. Normal development workers consume both default and announcements queues. Actual database workers and competing processes are exercised only against isolated file SQLite. No production-engine or producer-rollout claim follows from those local results.

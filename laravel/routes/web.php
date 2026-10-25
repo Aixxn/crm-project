@@ -25,7 +25,8 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('browse', [PublicListingController::class, 'index'])->name('public.browse');
 Route::get('properties/featured', [PublicListingController::class, 'featured'])->name('public.property.featured');
 Route::get('properties/{listing}', [PublicListingController::class, 'show'])->name('public.property.show');
-Route::post('webhooks/listings/offered', [ListingWebhookController::class, 'offered'])->name('webhooks.listings.offered');
+Route::post('webhooks/listings/offered', [ListingWebhookController::class, 'offered'])->middleware('throttle:listing-webhooks')->name('webhooks.listings.offered');
+Route::post('webhooks/v2/listings/offered', [ListingWebhookController::class, 'offeredV2'])->middleware('throttle:listing-webhooks')->name('webhooks.v2.listings.offered');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-home', BuyerHomeController::class)->name('public.my-home');

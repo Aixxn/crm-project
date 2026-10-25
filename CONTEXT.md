@@ -25,6 +25,8 @@ Read [architecture](docs/architecture.md), [design system](docs/design-system.md
 | Note | Authored internal context linked to the same supported parent types. Authorship does not independently grant access. |
 | Saved listing | A User's bookmark; it grants neither staff access nor access to an unpublished property. |
 | Listing-offered event | The existing webhook's announcement of an available Listing to eligible buyers. It does not mean a buyer's Offer was accepted. |
+| Announcement receipt | A durable v2 listing-offered event identity and dispatch intent. Retries return the same receipt, independently of visible notification history. |
+| Announcement delivery | A terminal delivered, ineligible, or unpublished outcome for one receipt and User. Its durable identity prevents duplicate or resurrected notifications. |
 | Closure | A Listing's successful final outcome, distinct from Closed Lost. Successful closure records authoritative `closed_at`; unknown legacy closure dates remain null. |
 
 ## Persistent conventions

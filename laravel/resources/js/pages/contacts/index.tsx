@@ -8,6 +8,8 @@ import {
     SlidersHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
+import { EmptyState } from '@/components/empty-state';
+import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { contactName, formatDate } from '@/lib/format';
 import { dashboard } from '@/routes';
 import contacts from '@/routes/contacts';
 import type { ContactRole, PaginatedContacts } from './types';
@@ -58,14 +61,14 @@ export default function ContactIndex({
     return (
         <>
             <Head title="Contacts" />
-            <main className="min-h-full bg-[#FAF8FF]">
-                <div className="border-b border-[#C3C6D7] bg-white px-4 py-4 md:px-6">
+            <main className="min-h-full bg-muted">
+                <div className="border-b border-border bg-card px-4 py-4 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl font-semibold text-neutral-950">
+                            <h1 className="text-xl font-semibold text-foreground">
                                 Contacts
                             </h1>
-                            <p className="mt-1 text-sm text-neutral-600">
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 {paginated.total} people linked to listings and
                                 workflow activity.
                             </p>
@@ -82,10 +85,10 @@ export default function ContactIndex({
                 </div>
 
                 <div className="space-y-4 p-4 md:p-6">
-                    <section className="rounded-md border border-[#C3C6D7] bg-white">
-                        <div className="grid gap-3 border-b border-[#C3C6D7]/70 p-3 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
+                    <section className="rounded-md border border-border bg-card">
+                        <div className="grid gap-3 border-b border-border/70 p-3 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
                             <div className="relative">
-                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-neutral-500" />
+                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={search}
                                     onChange={(event) =>
@@ -101,7 +104,7 @@ export default function ContactIndex({
                                 />
                             </div>
                             <Select value={role} onValueChange={setRole}>
-                                <SelectTrigger className="w-full bg-white">
+                                <SelectTrigger className="w-full bg-card">
                                     <SelectValue placeholder="Role" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -120,7 +123,7 @@ export default function ContactIndex({
 
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[760px] text-left text-sm">
-                                <thead className="bg-neutral-50 text-xs font-medium text-neutral-500 uppercase">
+                                <thead className="bg-muted text-xs font-medium text-muted-foreground uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Contact</th>
                                         <th className="px-4 py-3">Role</th>
@@ -132,15 +135,15 @@ export default function ContactIndex({
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#C3C6D7]/60">
+                                <tbody className="divide-y divide-border/60">
                                     {paginated.data.map((contact) => (
                                         <tr
                                             key={contact.id}
-                                            className="bg-white align-top hover:bg-[#FAF8FF]"
+                                            className="bg-card align-top hover:bg-muted"
                                         >
                                             <td className="px-4 py-4">
                                                 <div className="flex gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#C3C6D7] bg-[#FAF8FF] text-neutral-700">
+                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-foreground">
                                                         <ContactRound className="size-4" />
                                                     </div>
                                                     <div>
@@ -148,13 +151,13 @@ export default function ContactIndex({
                                                             href={contacts.show(
                                                                 contact,
                                                             )}
-                                                            className="font-medium text-neutral-950 hover:underline"
+                                                            className="font-medium text-foreground hover:underline"
                                                         >
                                                             {contactName(
                                                                 contact,
                                                             )}
                                                         </Link>
-                                                        <div className="mt-1 text-xs text-neutral-500">
+                                                        <div className="mt-1 text-xs text-muted-foreground">
                                                             Added{' '}
                                                             {formatDate(
                                                                 contact.created_at,
@@ -168,13 +171,13 @@ export default function ContactIndex({
                                                     role={contact.role}
                                                 />
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
+                                            <td className="px-4 py-4 text-foreground">
                                                 {contact.email ?? '-'}
                                             </td>
-                                            <td className="px-4 py-4 text-neutral-700">
+                                            <td className="px-4 py-4 text-foreground">
                                                 {contact.phone ?? '-'}
                                             </td>
-                                            <td className="max-w-xs px-4 py-4 text-neutral-600">
+                                            <td className="max-w-xs px-4 py-4 text-muted-foreground">
                                                 <span className="line-clamp-2">
                                                     {contact.notes || '-'}
                                                 </span>
@@ -220,40 +223,11 @@ export default function ContactIndex({
                         </div>
 
                         {paginated.data.length === 0 && (
-                            <div className="px-4 py-14 text-center text-sm text-neutral-600">
+                            <EmptyState>
                                 No contacts match the current filters.
-                            </div>
+                            </EmptyState>
                         )}
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#C3C6D7]/70 px-4 py-3 text-sm text-neutral-600">
-                            <span>
-                                Showing {paginated.from ?? 0}-
-                                {paginated.to ?? 0} of {paginated.total}
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                                {paginated.links.map((link) => (
-                                    <Button
-                                        key={`${link.label}-${link.url}`}
-                                        size="sm"
-                                        variant={
-                                            link.active ? 'default' : 'outline'
-                                        }
-                                        disabled={!link.url}
-                                        asChild={Boolean(link.url)}
-                                    >
-                                        {link.url ? (
-                                            <Link href={link.url}>
-                                                {paginationLabel(link.label)}
-                                            </Link>
-                                        ) : (
-                                            <span>
-                                                {paginationLabel(link.label)}
-                                            </span>
-                                        )}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
+                        <Pagination paginated={paginated} />
                     </section>
                 </div>
             </main>
@@ -276,9 +250,9 @@ ContactIndex.layout = {
 
 function RoleBadge({ role }: { role: ContactRole }) {
     const classes: Record<ContactRole, string> = {
-        Owner: 'border-sky-200 bg-sky-50 text-sky-700',
-        Buyer: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        Tenant: 'border-amber-200 bg-amber-50 text-amber-700',
+        Owner: 'border-status-info-border bg-status-info text-status-info-foreground',
+        Buyer: 'border-status-success-border bg-status-success text-status-success-foreground',
+        Tenant: 'border-status-warning-border bg-status-warning text-status-warning-foreground',
     };
 
     return (
@@ -286,23 +260,4 @@ function RoleBadge({ role }: { role: ContactRole }) {
             {role}
         </Badge>
     );
-}
-
-function contactName(contact: {
-    first_name: string;
-    last_name: string | null;
-}) {
-    return `${contact.first_name} ${contact.last_name ?? ''}`.trim();
-}
-
-function formatDate(value: string) {
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(new Date(value));
-}
-
-function paginationLabel(label: string) {
-    return label.replace('&laquo;', 'Previous').replace('&raquo;', 'Next');
 }
